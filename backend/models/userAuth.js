@@ -1,6 +1,6 @@
 const { DataTypes } = require('sequelize');
 
-const userAuthDefinition = {
+const UserAuth = {
   name: {
     type: DataTypes.STRING,
     allowNull: false
@@ -16,4 +16,4 @@ const userAuthDefinition = {
   }
 };
 
-module.exports = userAuthDefinition;
+module.exports = UserAuth;

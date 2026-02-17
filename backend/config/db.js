@@ -12,9 +12,13 @@ const sequelize = new Sequelize(
 
 // Import model defininition
 const userAuthDef = require('../models/userAuth');
+const tripDataDef = require('../models/tripData');
+const tripMemberDef = require('../models/tripMember');
 
 // Define model
-const UserAuth = sequelize.define('userAuth', userAuthDef, { timestamps: true });
+const UserAuth = sequelize.define('user_auth', userAuthDef, { timestamps: true });
+const TripData = sequelize.define('trip_data', tripDataDef, { timestamps: true });
+const TripMember = sequelize.define('trip_member_data', tripMemberDef, { timestamps: true });
 
 const connectDB = async () => {
   try {
@@ -26,4 +30,4 @@ const connectDB = async () => {
   }
 };
 
-module.exports = { sequelize, connectDB, UserAuth };
+module.exports = { sequelize, connectDB, UserAuth, TripData, TripMember };
