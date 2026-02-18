@@ -6,9 +6,9 @@ const { hashPass } = require("./authController");
 const jwt = require("jsonwebtoken");
 exports.createTrip = async (req, res) =>{
     try{
-        const {name, destination, startDate, endDate, cover_img} = req.body;
+        const {name, destination, startDate, endDate, budget, cover_img} = req.body;
         const user_id = req.user && req.user.id;
-        const trip = await TripData.create({name, destination, startDate, endDate, cover_img, created_by: user_id});
+        const trip = await TripData.create({name, destination, startDate, endDate, budget, cover_img, created_by: user_id});
 
         const createBy = await UserAuth.findByPk(user_id);
         await TripMember.create({
