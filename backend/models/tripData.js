@@ -14,6 +14,9 @@ const tripDataDefinition = {
   endDate: {
     type: DataTypes.DATE
   },
+  totalDays:{
+    type: DataTypes.NUMBER
+  },
   budget: {
     type: DataTypes.NUMBER
   },
