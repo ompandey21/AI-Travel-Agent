@@ -87,9 +87,63 @@ exports.loginUser = async (req, res) =>{
     }
 }
 
+exports.forgetPassword = async(req, res) =>{
+    try{
+        const {email} = req.body;
+        if (!email) {
+            return res.status(400).json({ message: "Email fields is required." });
+        }
+
+        const findUser = await UserAuth.findOne({where: {email}});
+        if(!findUser){
+            return res.status(404).json({message: "user not found"});
+        }
+
+        const resetToken = jwt.sign({email}, jwt_secret, {expiresIn : 120});
+        const url = `http://localhost:8080/api/auth/createpassword/${resetToken}`;
+
+        return res.status(200).json({message : "token generated", url});
+    }
+    catch(e){
+        console.error("Internal server error", e);
+        res.status(500).json({message : "Internal server error"});
+    }
+}
+
+exports.createpassword = async(req, res) =>{
+    try{
+        const {token} = req.params;
+        const {password, cpassword} = req.body;
+        if(!password || !cpassword){
+            return res.status(400).json({ message: "All fields are required" });
+        }
+        if(password != cpassword){
+            return res.status(400).json({ message: "Passwords do not match." });
+        }
+        const tokenIsValid = jwt.verify(token, jwt_secret);
+        if(!tokenIsValid){
+            return res.status(401).json({ message: "Invalid or expired token." });
+        }
+        const user = await UserAuth.findOne({where: {email: tokenIsValid.email}});
+        if(!user){
+            res.status(404).json({message: "User not found"});
+        }
+        const hashedPass = await hashPass(password);
+        user.password = hashedPass;
+        user.save();
+        return res.status(200).json({message: "Password updated successfully"});
+    }
+    catch(e){
+        console.error("Internal server error", e);
+        res.status(500).json({message : "Internal server error"});
+    }
+}
+
 module.exports = {
     hashPass,
     verifyUser,
     createUser: exports.createUser,
-    loginUser: exports.loginUser
+    loginUser: exports.loginUser,
+    forgetPassword: exports.forgetPassword,
+    createpassword: exports.createpassword
 }

@@ -42,7 +42,14 @@ DayData.hasMany(SlotData, { foreignKey: 'day_id', as: 'slots' });
 SlotData.belongsTo(DayData, { foreignKey: 'day_id', as: 'day' });
 
 app.use(express.json());
-app.use(cors());
+
+const corsOptions = {
+  origin: 'http://localhost:5175',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+};
+app.use(cors(corsOptions));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/trips", createTripRoutes);
