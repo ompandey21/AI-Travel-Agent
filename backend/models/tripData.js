@@ -14,6 +14,12 @@ const tripDataDefinition = {
   endDate: {
     type: DataTypes.DATE
   },
+  totalDays:{
+    type: DataTypes.NUMBER
+  },
+  budget: {
+    type: DataTypes.NUMBER
+  },
   cover_img: {
     type: DataTypes.STRING,
     defaultValue: ""

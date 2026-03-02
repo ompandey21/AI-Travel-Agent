@@ -18,8 +18,8 @@ const tripMemberDefinition = {
     allowNull: false
   },
   role: {
-    type: DataTypes.ENUM('viewer', 'editor', 'admin'),
-    defaultValue: 'viewer'
+    type: DataTypes.ENUM('editor', 'admin'),
+    defaultValue: 'editor'
   },
   status: {
     type: DataTypes.ENUM('invited', 'accepted'),

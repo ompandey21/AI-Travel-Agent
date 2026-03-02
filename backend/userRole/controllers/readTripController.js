@@ -1,4 +1,5 @@
 const { TripMember, TripData } = require("../../config/db");
+const { budget } = require("../../models/tripData");
 
 exports.getMyTrips = async (req, res) => {
   try {
@@ -14,6 +15,7 @@ exports.getMyTrips = async (req, res) => {
         tripId: t.trip.id,
         destination: t.trip.destination,
         date: t.trip.date,
+        budget: t.trip.budget,
         cover_img: t.trip.cover_img,
         role: t.role
       }))

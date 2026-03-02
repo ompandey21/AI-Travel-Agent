@@ -1,4 +1,4 @@
-const { TripData, TripMember, UserAuth} = require("../../config/db");
+const { TripData, TripMember, UserAuth, ItineraryData} = require("../../config/db");
 const Crypto = require("crypto");
 const sendEmail = require("../../utils/sendMail");
 const { Op } = require("sequelize");
@@ -6,10 +6,14 @@ const { hashPass } = require("./authController");
 const jwt = require("jsonwebtoken");
 exports.createTrip = async (req, res) =>{
     try{
-        const {name, destination, startDate, endDate, cover_img} = req.body;
+        const {name, destination, startDate, endDate, budget, cover_img} = req.body;
         const user_id = req.user && req.user.id;
-        const trip = await TripData.create({name, destination, startDate, endDate, cover_img, created_by: user_id});
-
+        const findTrip = await TripData.findOne({where: {name, created_by: user_id}});
+        if(findTrip){
+            return res.status(400).json({message: "You already have a trip with this name"});
+        }
+        const totalDays = Math.ceil((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24));
+        const trip = await TripData.create({name, destination, startDate, endDate, totalDays, budget, cover_img, created_by: user_id});
         const createBy = await UserAuth.findByPk(user_id);
         await TripMember.create({
             userId: user_id,
@@ -30,7 +34,7 @@ exports.createTrip = async (req, res) =>{
 
 exports.inviteUser = async (req, res) =>{
     try{
-        const {email, role, tripId} = req.body;
+        const {email, tripId} = req.body;
         const userId = req.user && req.user.id;
         const findAdmin = await TripMember.findOne({
             where: {
@@ -43,6 +47,10 @@ exports.inviteUser = async (req, res) =>{
         if(!findAdmin){
             return res.status(403).json({message: "Not authorized"});
         }
+        const itinerary = await ItineraryData.findOne({ where: { trip_id: tripId } });
+        if(itinerary && itinerary.isFinalized){
+            return res.status(400).json({message: "Trip is finalized, cannot invite users"});
+        }
         const randomToken = Crypto.randomBytes(32).toString("hex");
         const placeholderName = (email && email.split('@')[0]) || 'Invited User';
         await TripMember.create(
@@ -50,7 +58,6 @@ exports.inviteUser = async (req, res) =>{
                 tripId,
                 email,
                 name: placeholderName,
-                role,
                 status: "invited",
                 inviteToken: randomToken,
                 inviteExpire: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24hrs
@@ -151,5 +158,26 @@ exports.getMembers = async (req, res) => {
     } catch (e) {
         console.error('Get members error', e);
         res.status(500).json({ message: 'Internal server error' });
+    }
+}
+
+exports.deleteTrip = async (req, res) => {
+    try{
+        const {tripId} = req.params;
+        const itinerary = await ItineraryData.findOne({ where: { trip_id: tripId } });
+        if(itinerary){
+            const days = await DayData.findAll({ where: { itinerary_id: itinerary.id } });
+            for(const day of days){
+                await SlotData.destroy({ where: { day_id: day.id } });
+            }
+            await DayData.destroy({ where: { itinerary_id: itinerary.id } });
+            await ItineraryData.destroy({ where: { id: itinerary.id } });
+            await TripData.destroy({ where: { id: tripId } });
+        }
+        res.status(200).json({ message: "Trip deleted successfully" });
+    }
+    catch(e){
+        console.error("Delete trip error", e);
+        res.status(500).json({ message: "Internal server error" });
     }
 }

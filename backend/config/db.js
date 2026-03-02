@@ -14,11 +14,17 @@ const sequelize = new Sequelize(
 const userAuthDef = require('../models/userAuth');
 const tripDataDef = require('../models/tripData');
 const tripMemberDef = require('../models/tripMember');
+const itineraryDataDef = require('../models/itinerary_models/itineraryData');
+const dayDataDef = require('../models/itinerary_models/dayData');
+const slotDataDef = require('../models/itinerary_models/slotsData');
 
 // Define model
 const UserAuth = sequelize.define('user_auth', userAuthDef, { timestamps: true });
 const TripData = sequelize.define('trip_data', tripDataDef, { timestamps: true });
 const TripMember = sequelize.define('trip_member_data', tripMemberDef, { timestamps: true });
+const ItineraryData = sequelize.define('itinerary_data', itineraryDataDef, { timestamps: true });
+const DayData = sequelize.define('day_data', dayDataDef, { timestamps: true });
+const SlotData = sequelize.define('slot_data', slotDataDef, { timestamps: true });
 
 const connectDB = async () => {
   try {
@@ -30,4 +36,4 @@ const connectDB = async () => {
   }
 };
 
-module.exports = { sequelize, connectDB, UserAuth, TripData, TripMember };
+module.exports = { sequelize, connectDB, UserAuth, TripData, TripMember, ItineraryData, DayData, SlotData };
