@@ -1,16 +1,16 @@
-import { useNavigate } from 'react-router-dom';
+import CTA from "./CTASection";
+import FAQ from "./FAQ";
+import Features from "./Features"
+import Footer from "./Footer";
+import HeroSection from "./HeroSection"
 
 const Home = () => {
-    const navigate = useNavigate();
-    return (
+    return(
         <>
-            <div>
-                Welcome to InterNation
-            </div>
-            <button onClick={() => navigate('/auth')}>
-                Get Started
-            </button>
-
+            <HeroSection/>
+            <Features/>
+            <FAQ/>
+            <Footer/>
         </>
     )
 }
