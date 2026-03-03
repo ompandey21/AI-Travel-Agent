@@ -39,7 +39,13 @@ exports.createUser = async (req, res) =>{
         const user = await UserAuth.create({name, email, password: hashedPass});
         const payload = { id: user.id };
         const token = jwt.sign(payload, jwt_secret, { expiresIn: '1h' });
-        res.status(201).json({ message: 'User created successfully', token, id: user.id, name: user.name, email: user.email });
+        res.cookie('token', token, {
+            httpOnly: true, 
+            sameSite: 'strict', 
+            secure: process.env.NODE_ENV === 'production',
+            maxAge: 60 * 60 * 1000 
+        });
+        res.status(201).json({ message: 'User created successfully', id: user.id, name: user.name, email: user.email });
 
     }
     catch(e){
@@ -66,16 +72,19 @@ exports.loginUser = async (req, res) =>{
                 jwt_secret,
                 {expiresIn: '1h'}
             )
-            res.status(200).json(
-                {
-                    message: "Login successfull",
-                    token,
-                    id: findUser.id,
-                    name: findUser.name,
-                    email: findUser.email,
-                    createdAt: findUser.createdAt
-                }
-            )
+            res.cookie('token', token, { 
+                httpOnly: true,
+                sameSite: 'strict', 
+                secure: process.env.NODE_ENV === 'production', 
+                maxAge: 60 * 60 * 1000 
+            });
+            res.status(200).json({
+                message: "Login successfull",
+                id: findUser.id,
+                name: findUser.name,
+                email: findUser.email,
+                createdAt: findUser.createdAt
+            });
         }
         else{
             res.status(401).json({message: "Invalid credentials"});
@@ -139,11 +148,29 @@ exports.createpassword = async(req, res) =>{
     }
 }
 
+exports.logout = async (req, res) => {
+    try {
+        const cookieOptions = { 
+            httpOnly: true, 
+            sameSite: 'strict', 
+            secure: process.env.NODE_ENV === 'production', 
+            path: '/' 
+        };
+        res.clearCookie('token', cookieOptions);
+        res.cookie('token', '', { ...cookieOptions, expires: new Date(0) });
+        return res.status(200).json({ message: 'Logged out' });
+    } catch (e) {
+        console.error('Logout error', e);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+}
+
 module.exports = {
     hashPass,
     verifyUser,
     createUser: exports.createUser,
     loginUser: exports.loginUser,
     forgetPassword: exports.forgetPassword,
-    createpassword: exports.createpassword
+    createpassword: exports.createpassword,
+    logout: exports.logout
 }

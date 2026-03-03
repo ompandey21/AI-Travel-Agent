@@ -1,4 +1,4 @@
-const { TripData, TripMember, UserAuth, ItineraryData} = require("../../config/db");
+const { TripData, TripMember, UserAuth, ItineraryData, DayData, SlotData} = require("../../config/db");
 const Crypto = require("crypto");
 const sendEmail = require("../../utils/sendMail");
 const { Op } = require("sequelize");
