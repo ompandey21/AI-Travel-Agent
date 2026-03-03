@@ -165,6 +165,25 @@ exports.logout = async (req, res) => {
     }
 }
 
+exports.getMe = async (req, res) => {
+    try {
+        const token = req.cookies.token;
+        if (!token) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+        const decoded = jwt.verify(token, jwt_secret);
+        const user = await UserAuth.findByPk(decoded.id, { attributes: ['id', 'name', 'email', 'createdAt'] });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        return res.status(200).json(user);
+    } 
+    catch (e){
+        console.error('Error fetching current user', e);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+}
+
 module.exports = {
     hashPass,
     verifyUser,
@@ -172,5 +191,6 @@ module.exports = {
     loginUser: exports.loginUser,
     forgetPassword: exports.forgetPassword,
     createpassword: exports.createpassword,
-    logout: exports.logout
+    logout: exports.logout,
+    getMe: exports.getMe
 }
