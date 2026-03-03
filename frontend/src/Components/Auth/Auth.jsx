@@ -96,7 +96,7 @@ export default function Auth(){
     finally{ setLoading(false) }
   }
 
-  const hero = 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1600&auto=format&fit=crop'
+  const hero = import.meta.env.VITE_AUTH_IMG;
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
