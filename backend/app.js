@@ -1,6 +1,7 @@
 const express = require("express");
 const app = express();
 const cors = require("cors");
+const cookieParser = require('cookie-parser');
 require("dotenv").config();
 
 const authRoutes = require("./userRole/routes/authRoute");
@@ -43,14 +44,15 @@ SlotData.belongsTo(DayData, { foreignKey: 'day_id', as: 'day' });
 
 app.use(express.json());
 
+app.use(cookieParser());
+
 const corsOptions = {
-  origin: 'http://localhost:5175',
+  origin: 'http://localhost:5173',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
 };
 app.use(cors(corsOptions));
-
 app.use("/api/auth", authRoutes);
 app.use("/api/trips", createTripRoutes);
 app.use("/api/read-trips", readTripRoutes);
