@@ -126,7 +126,7 @@ exports.rejectSlot = async (req, res) =>{
 exports.updateSlot = async (req, res) =>{
     try{
         const {slotId} = req.params;
-        const {startTime, endTime, activity} = req.body;
+        const {startTime, endTime, activity, imgUrl} = req.body;
         const slot = await SlotData.findByPk(slotId);
         const day = await DayData.findByPk(slot.day_id);
         const itinerary = await ItineraryData.findByPk(day.itinerary_id);
@@ -139,6 +139,7 @@ exports.updateSlot = async (req, res) =>{
         slot.startTime = startTime;
         slot.endTime = endTime;
         slot.activity = activity;
+        slot.imgUrl = imgUrl;
         await slot.save();
         res.status(200).json({ message: "Slot updated successfully", slot });
     }
