@@ -1,6 +1,7 @@
 const { UserAuth } = require("../../config/db");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const sendEmail = require("../../utils/sendMail");
 
 const saltRounds = 10;
 const jwt_secret = process.env.JWT_SECRET;
@@ -30,10 +31,13 @@ async function verifyUser(plainPass, hashedPass){
 
 exports.createUser = async (req, res) =>{
     try{
-        const {name, email, password} = req.body;
+        const {name, email, password, cpassword} = req.body;
         const existUser = await UserAuth.findOne({ where: { email } });
         if(existUser){
             return res.status(400).json({message: "User already created"});
+        }
+        if(password !== cpassword){
+            return res.status(400).json({message: "password do not match"});
         }
         const hashedPass = await hashPass(password);
         const user = await UserAuth.create({name, email, password: hashedPass});
@@ -108,10 +112,19 @@ exports.forgetPassword = async(req, res) =>{
             return res.status(404).json({message: "user not found"});
         }
 
-        const resetToken = jwt.sign({email}, jwt_secret, {expiresIn : 120});
-        const url = `http://localhost:8080/api/auth/createpassword/${resetToken}`;
+        // generate numeric OTP, store it with expiry and email it to user
+        const otp = String(Math.floor(100000 + Math.random() * 900000)); // 6-digit
+        const otp_expires = new Date(Date.now() + (10 * 60 * 1000)); // 10 minutes
 
-        return res.status(200).json({message : "token generated", url});
+        findUser.otp = otp;
+        findUser.otp_expires = otp_expires;
+        await findUser.save();
+
+        const subject = 'Your password reset OTP';
+        const text = `Your OTP for password reset is: ${otp}. It will expire in 10 minutes.`;
+        await sendEmail(email, subject, text);
+
+        return res.status(200).json({ message: 'OTP sent to email' });
     }
     catch(e){
         console.error("Internal server error", e);
@@ -119,28 +132,42 @@ exports.forgetPassword = async(req, res) =>{
     }
 }
 
+exports.verifyResetToken = async (req, res) => {
+    try {
+        const { token } = req.params;
+        if (!token) return res.status(400).json({ valid: false, message: 'Token is required' });
+        const decoded = jwt.verify(token, jwt_secret);
+        return res.status(200).json({ valid: true, email: decoded.email });
+    } catch (e) {
+        return res.status(400).json({ valid: false, message: 'Invalid or expired token' });
+    }
+}
+
 exports.createpassword = async(req, res) =>{
     try{
-        const {token} = req.params;
-        const {password, cpassword} = req.body;
-        if(!password || !cpassword){
+        const { otp, password, cpassword } = req.body;
+        if(!otp || !password || !cpassword){
             return res.status(400).json({ message: "All fields are required" });
         }
-        if(password != cpassword){
+        if(password !== cpassword){
             return res.status(400).json({ message: "Passwords do not match." });
         }
-        const tokenIsValid = jwt.verify(token, jwt_secret);
-        if(!tokenIsValid){
-            return res.status(401).json({ message: "Invalid or expired token." });
-        }
-        const user = await UserAuth.findOne({where: {email: tokenIsValid.email}});
+
+        const user = await UserAuth.findOne({ where: { otp } });
         if(!user){
-            res.status(404).json({message: "User not found"});
+            return res.status(400).json({ message: "Invalid OTP." });
         }
+        if(!user.otp_expires || new Date() > user.otp_expires){
+            return res.status(400).json({ message: "OTP expired. Please request a new one." });
+        }
+
         const hashedPass = await hashPass(password);
         user.password = hashedPass;
-        user.save();
-        return res.status(200).json({message: "Password updated successfully"});
+        user.otp = null;
+        user.otp_expires = null;
+        await user.save();
+
+        return res.status(200).json({ message: "Password updated successfully" });
     }
     catch(e){
         console.error("Internal server error", e);
@@ -190,6 +217,7 @@ module.exports = {
     createUser: exports.createUser,
     loginUser: exports.loginUser,
     forgetPassword: exports.forgetPassword,
+    verifyResetToken: exports.verifyResetToken,
     createpassword: exports.createpassword,
     logout: exports.logout,
     getMe: exports.getMe
