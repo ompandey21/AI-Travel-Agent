@@ -1,0 +1,336 @@
+import { useState, useEffect } from "react";
+
+const FloatingOrb = ({ x, y, size, color, delay, duration }) => (
+  <div
+    style={{
+      position: "absolute",
+      left: x,
+      top: y,
+      width: size,
+      height: size,
+      borderRadius: "50%",
+      background: color,
+      filter: "blur(40px)",
+      opacity: 0.35,
+      animation: `float ${duration}s ease-in-out ${delay}s infinite alternate`,
+      pointerEvents: "none",
+    }}
+  />
+);
+
+const GridLines = () => (
+  <svg
+    style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0.06 }}
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <defs>
+      <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse">
+        <path d="M 48 0 L 0 0 0 48" fill="none" stroke="#c8b8ff" strokeWidth="0.5" />
+      </pattern>
+    </defs>
+    <rect width="100%" height="100%" fill="url(#grid)" />
+  </svg>
+);
+
+const ScanLine = () => (
+  <div
+    style={{
+      position: "absolute",
+      left: 0,
+      right: 0,
+      height: "2px",
+      background: "linear-gradient(90deg, transparent, #a78bfa55, #7c3aed88, #a78bfa55, transparent)",
+      animation: "scanDown 4s linear infinite",
+      pointerEvents: "none",
+      zIndex: 1,
+    }}
+  />
+);
+
+export default function AuthMock() {
+  const [typed, setTyped] = useState("");
+  const [showCursor, setShowCursor] = useState(true);
+  const [step, setStep] = useState(0); // 0=typing, 1=verifying, 2=granted
+  const [dots, setDots] = useState("");
+  const email = "operator@nexus.io";
+
+  useEffect(() => {
+    const cursorInterval = setInterval(() => setShowCursor(c => !c), 530);
+    return () => clearInterval(cursorInterval);
+  }, []);
+
+  useEffect(() => {
+    if (step !== 0) return;
+    if (typed.length < email.length) {
+      const t = setTimeout(() => setTyped(email.slice(0, typed.length + 1)), 90 + Math.random() * 60);
+      return () => clearTimeout(t);
+    } else {
+      const t = setTimeout(() => setStep(1), 800);
+      return () => clearTimeout(t);
+    }
+  }, [typed, step]);
+
+  useEffect(() => {
+    if (step === 1) {
+      const t = setTimeout(() => setStep(2), 2200);
+      return () => clearTimeout(t);
+    }
+  }, [step]);
+
+  useEffect(() => {
+    if (step !== 1) return;
+    const t = setInterval(() => setDots(d => d.length >= 3 ? "" : d + "."), 400);
+    return () => clearInterval(t);
+  }, [step]);
+
+  return (
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap');
+        @keyframes float {
+          from { transform: translateY(0px) scale(1); }
+          to { transform: translateY(-30px) scale(1.08); }
+        }
+        @keyframes scanDown {
+          0% { top: -2px; }
+          100% { top: 100%; }
+        }
+        @keyframes fadeSlideUp {
+          from { opacity: 0; transform: translateY(16px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes pulseRing {
+          0% { box-shadow: 0 0 0 0 #7c3aed44; }
+          70% { box-shadow: 0 0 0 14px transparent; }
+          100% { box-shadow: 0 0 0 0 transparent; }
+        }
+        @keyframes shimmer {
+          0% { background-position: -200% center; }
+          100% { background-position: 200% center; }
+        }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        @keyframes blink {
+          0%, 100% { opacity: 1; } 50% { opacity: 0; }
+        }
+        @keyframes grantedPop {
+          0% { transform: scale(0.85); opacity: 0; }
+          60% { transform: scale(1.04); opacity: 1; }
+          100% { transform: scale(1); opacity: 1; }
+        }
+        .card-glow:hover {
+          box-shadow: 0 0 60px #7c3aed22, 0 8px 48px #0008;
+        }
+      `}</style>
+
+      <div style={{
+        minHeight: "100vh",
+        background: "#0a0812",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontFamily: "'Space Mono', monospace",
+        position: "relative",
+        overflow: "hidden",
+      }}>
+        {/* Background orbs */}
+        <FloatingOrb x="5%" y="10%" size="320px" color="#4c1d95" delay={0} duration={7} />
+        <FloatingOrb x="60%" y="60%" size="280px" color="#1e1b4b" delay={1.5} duration={9} />
+        <FloatingOrb x="75%" y="5%" size="200px" color="#6d28d9" delay={0.5} duration={6} />
+        <FloatingOrb x="20%" y="65%" size="180px" color="#312e81" delay={2} duration={8} />
+
+        <GridLines />
+        <ScanLine />
+
+        {/* Decorative side elements */}
+        <div style={{
+          position: "absolute", left: 32, top: "50%", transform: "translateY(-50%)",
+          display: "flex", flexDirection: "column", gap: 8, opacity: 0.3
+        }}>
+          {["SYS", "NET", "SEC", "USR"].map(l => (
+            <span key={l} style={{ color: "#7c3aed", fontSize: 9, letterSpacing: 3, writingMode: "vertical-rl" }}>{l}</span>
+          ))}
+        </div>
+
+        {/* Main card */}
+        <div className="card-glow" style={{
+          background: "linear-gradient(145deg, #13102099 60%, #1e1b3a99)",
+          backdropFilter: "blur(32px)",
+          border: "1px solid #ffffff10",
+          borderRadius: 24,
+          padding: "48px 44px 40px",
+          width: "100%",
+          maxWidth: 420,
+          position: "relative",
+          zIndex: 2,
+          boxShadow: "0 4px 64px #0009, inset 0 1px 0 #ffffff08",
+          transition: "box-shadow 0.3s ease",
+          animation: "fadeSlideUp 0.7s ease both",
+        }}>
+
+          {/* Top bar */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 36 }}>
+            <div style={{ display: "flex", gap: 6 }}>
+              {["#ff5f57", "#febc2e", "#28c840"].map((c, i) => (
+                <div key={i} style={{ width: 10, height: 10, borderRadius: "50%", background: c, opacity: 0.7 }} />
+              ))}
+            </div>
+            <span style={{ color: "#7c3aed", fontSize: 9, letterSpacing: 4, opacity: 0.7 }}>NEXUS_AUTH v2.1</span>
+            <div style={{ width: 8, height: 8, borderRadius: "50%", background: step === 2 ? "#28c840" : "#febc2e", animation: "blink 1.4s infinite" }} />
+          </div>
+
+          {/* Logo / Icon */}
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: 28 }}>
+            <div style={{
+              width: 64, height: 64, borderRadius: 18,
+              background: "linear-gradient(135deg, #7c3aed, #4f46e5)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              boxShadow: "0 0 32px #7c3aed55",
+              animation: "pulseRing 2.5s ease-out infinite",
+            }}>
+              <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2L2 7v5c0 5.25 4.2 10.15 10 11.35C17.8 22.15 22 17.25 22 12V7L12 2z" fill="#fff" fillOpacity="0.15" stroke="#fff" strokeWidth="1.5" strokeLinejoin="round"/>
+                <circle cx="12" cy="11" r="3" fill="#fff" fillOpacity="0.9"/>
+                <path d="M7.5 17.5c0-2.5 2-4 4.5-4s4.5 1.5 4.5 4" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+            </div>
+          </div>
+
+          {/* Title */}
+          <div style={{ textAlign: "center", marginBottom: 32 }}>
+            <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color: "#f0eeff", letterSpacing: 1, margin: 0 }}>
+              Secure Access
+            </h1>
+            <p style={{ color: "#7c6fa0", fontSize: 11, letterSpacing: 2, marginTop: 6, margin: "6px 0 0" }}>
+              IDENTITY VERIFICATION REQUIRED
+            </p>
+          </div>
+
+          {/* Fields */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+
+            {/* Email field */}
+            <div style={{
+              background: "#0d0b1a",
+              border: "1px solid #2e2450",
+              borderRadius: 12,
+              padding: "12px 16px",
+            }}>
+              <div style={{ color: "#5b4f7a", fontSize: 9, letterSpacing: 3, marginBottom: 6 }}>IDENTIFIER</div>
+              <div style={{ color: "#c4b5fd", fontSize: 13, letterSpacing: 0.5, minHeight: 18 }}>
+                {typed}
+                {step === 0 && (
+                  <span style={{ opacity: showCursor ? 1 : 0, color: "#7c3aed" }}>|</span>
+                )}
+              </div>
+            </div>
+
+            {/* Password field */}
+            <div style={{
+              background: "#0d0b1a",
+              border: "1px solid #2e2450",
+              borderRadius: 12,
+              padding: "12px 16px",
+            }}>
+              <div style={{ color: "#5b4f7a", fontSize: 9, letterSpacing: 3, marginBottom: 6 }}>PASSKEY</div>
+              <div style={{ color: "#c4b5fd", fontSize: 16, letterSpacing: 4 }}>
+                {"●".repeat(step === 0 ? 5 : step === 1 ? 8 : 12)}
+              </div>
+            </div>
+
+          </div>
+
+          {/* Status / Button area */}
+          <div style={{ marginTop: 24 }}>
+            {step === 0 && (
+              <div style={{
+                background: "linear-gradient(135deg, #7c3aed, #4f46e5)",
+                borderRadius: 12, padding: "14px",
+                textAlign: "center", color: "#fff",
+                fontSize: 11, fontWeight: 700, letterSpacing: 3,
+                opacity: 0.5,
+                cursor: "not-allowed",
+              }}>
+                AUTHENTICATE
+              </div>
+            )}
+
+            {step === 1 && (
+              <div style={{
+                background: "#13102a",
+                border: "1px solid #3b2e6a",
+                borderRadius: 12, padding: "14px",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 12,
+              }}>
+                <div style={{
+                  width: 16, height: 16,
+                  border: "2px solid #7c3aed",
+                  borderTopColor: "transparent",
+                  borderRadius: "50%",
+                  animation: "spin 0.7s linear infinite",
+                }} />
+                <span style={{ color: "#a78bfa", fontSize: 11, letterSpacing: 3 }}>
+                  VERIFYING{dots}
+                </span>
+              </div>
+            )}
+
+            {step === 2 && (
+              <div style={{
+                background: "linear-gradient(135deg, #065f46, #047857)",
+                borderRadius: 12, padding: "14px",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+                animation: "grantedPop 0.5s ease both",
+                boxShadow: "0 0 32px #05966922",
+              }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path d="M5 13l4 4L19 7" stroke="#6ee7b7" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <span style={{ color: "#6ee7b7", fontSize: 11, letterSpacing: 3, fontWeight: 700 }}>
+                  ACCESS GRANTED
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Footer links */}
+          <div style={{
+            display: "flex", justifyContent: "space-between",
+            marginTop: 20, paddingTop: 16,
+            borderTop: "1px solid #1e1b35",
+          }}>
+            {["Forgot Key?", "Request Access", "2FA Setup"].map(l => (
+              <span key={l} style={{ color: "#4a3f6b", fontSize: 9, letterSpacing: 1.5, cursor: "pointer" }}>{l}</span>
+            ))}
+          </div>
+
+          {/* Corner accents */}
+          {[[0,0,"tl"],[0,"auto","bl"],["auto",0,"tr"],["auto","auto","br"]].map(([t,b,k]) => (
+            <div key={k} style={{
+              position: "absolute",
+              top: t, bottom: b === "auto" ? "auto" : b,
+              left: k.includes("l") ? 0 : "auto",
+              right: k.includes("r") ? 0 : "auto",
+              width: 16, height: 16,
+              borderTop: k.includes("t") ? "2px solid #7c3aed55" : "none",
+              borderBottom: k.includes("b") ? "2px solid #7c3aed55" : "none",
+              borderLeft: k.includes("l") ? "2px solid #7c3aed55" : "none",
+              borderRight: k.includes("r") ? "2px solid #7c3aed55" : "none",
+              borderRadius: k === "tl" ? "4px 0 0 0" : k === "tr" ? "0 4px 0 0" : k === "bl" ? "0 0 0 4px" : "0 0 4px 0",
+            }} />
+          ))}
+        </div>
+
+        {/* Bottom system text */}
+        <div style={{
+          position: "absolute", bottom: 20, left: "50%", transform: "translateX(-50%)",
+          color: "#2e2450", fontSize: 9, letterSpacing: 4, whiteSpace: "nowrap"
+        }}>
+          NEXUS SYSTEMS © 2026 — ENCRYPTED CHANNEL
+        </div>
+      </div>
+    </>
+  );
+}
