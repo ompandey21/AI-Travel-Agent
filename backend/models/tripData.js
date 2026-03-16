@@ -2,17 +2,20 @@ const { DataTypes } = require('sequelize');
 
 const tripDataDefinition = {
   name: {
-    type: DataTypes.STRING
+    type: DataTypes.STRING,
+    allowNull: false
   },
   destination: {
     type: DataTypes.STRING,
     allowNull: false
   },
   startDate: {
-    type: DataTypes.DATE
+    type: DataTypes.DATE,
+    allowNull: false
   },
   endDate: {
-    type: DataTypes.DATE
+    type: DataTypes.DATE,
+    allowNull: false
   },
   totalDays:{
     type: DataTypes.INTEGER
@@ -26,7 +29,7 @@ const tripDataDefinition = {
   },
   created_by: {
     type: DataTypes.INTEGER,
-    allowNull: true
+    allowNull: false
   }
 };
 

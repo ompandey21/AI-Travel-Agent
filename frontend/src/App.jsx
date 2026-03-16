@@ -11,6 +11,7 @@ function App() {
       <Router>
         <Routes>
           <Route path='/auth' element = {<Auth/>}/>
+          <Route path='/auth/createpassword/:token' element={<Auth/>} />
           <Route path='/' element = {<Home/>}/>
           <Route path='/createTrip' 
             element = {

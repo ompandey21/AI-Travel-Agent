@@ -14,6 +14,15 @@ const UserAuth = {
     type: DataTypes.STRING,
     allowNull: false
   }
+  ,
+  otp: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  otp_expires: {
+    type: DataTypes.DATE,
+    allowNull: true
+  }
 };
 
 module.exports = UserAuth;
