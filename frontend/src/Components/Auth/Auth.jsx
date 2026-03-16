@@ -25,8 +25,6 @@ export default function Auth(){
     e.preventDefault()
     setMessage('')
     setLoading(true)
-
-    // basic client-side validation
     const email = (form.email || '').trim()
     const password = (form.password || '').trim()
     const name = (form.name || '').trim()
@@ -83,7 +81,7 @@ export default function Auth(){
       const data = res.data
 
       if(mode === 'login' || mode === 'signup'){
-        navigate('/')
+        navigate('/createTrip')
       } else if(mode === 'forgot'){
         setMessage(data.url || data.message || 'Reset link generated — check server response')
         setMode('login')
@@ -112,7 +110,7 @@ export default function Auth(){
       </div>
 
       {/* Right: form */}
-      <div className="flex-1 flex items-center justify-center p-8">
+      <div className="flex-1 flex items-center justify-center p-8 bg-gradient-to-t from-purple-800 to-teal-600">
         <div className="w-full max-w-md p-8 rounded-2xl bg-[rgba(255,255,255,0.03)] border border-white/8 backdrop-blur-md shadow-xl">
           <h2 className="text-3xl font-bold mb-1">{mode === 'login' ? 'Welcome back' : mode === 'signup' ? 'Create an account' : 'Reset password'}</h2>
           <p className="text-sm text-white/60 mb-6">{mode === 'login' ? 'Sign in to access your itineraries.' : mode === 'signup' ? 'Join Iternation to start planning.' : 'We will send a reset link to your email.'}</p>

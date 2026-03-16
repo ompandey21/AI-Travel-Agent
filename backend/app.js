@@ -42,9 +42,7 @@ DayData.belongsTo(ItineraryData, { foreignKey: 'itinerary_id', as: 'itinerary' }
 DayData.hasMany(SlotData, { foreignKey: 'day_id', as: 'slots' });
 SlotData.belongsTo(DayData, { foreignKey: 'day_id', as: 'day' });
 
-app.use(express.json());
 
-app.use(cookieParser());
 
 const corsOptions = {
   origin: 'http://localhost:5173',
@@ -53,6 +51,8 @@ const corsOptions = {
   credentials: true,
 };
 app.use(cors(corsOptions));
+app.use(express.json());
+app.use(cookieParser());
 app.use("/api/auth", authRoutes);
 app.use("/api/trips", createTripRoutes);
 app.use("/api/read-trips", readTripRoutes);
