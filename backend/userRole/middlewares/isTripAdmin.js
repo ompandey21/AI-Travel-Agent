@@ -11,13 +11,11 @@ async function isTripAdmin(req, res, next) {
         if (req.params.tripId) {
             tripId = req.params.tripId;
         } else if (req.params.itineraryId) {
-            // Find tripId from itinerary
             const itinerary = await ItineraryData.findByPk(req.params.itineraryId);
             if (itinerary) {
                 tripId = itinerary.trip_id;
             }
         } else if (req.params.dayId) {
-            // Find tripId from day -> itinerary
             const day = await DayData.findByPk(req.params.dayId);
             if (day) {
                 const itinerary = await ItineraryData.findByPk(day.itinerary_id);
@@ -26,7 +24,6 @@ async function isTripAdmin(req, res, next) {
                 }
             }
         } else if (req.params.slotId) {
-            // Find tripId from slot -> day -> itinerary
             const slot = await SlotData.findByPk(req.params.slotId);
             if (slot) {
                 const day = await DayData.findByPk(slot.day_id);

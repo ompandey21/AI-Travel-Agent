@@ -13,8 +13,7 @@ const UserAuth = {
   password: {
     type: DataTypes.STRING,
     allowNull: false
-  }
-  ,
+  },
   otp: {
     type: DataTypes.STRING,
     allowNull: true

@@ -1,4 +1,4 @@
-const { TripData, TripMember, UserAuth, ItineraryData, DayData, SlotData} = require("../../config/db");
+const { TripData, TripMember, UserAuth, ItineraryData, DayData, SlotData, UserExpense} = require("../../config/db");
 const Crypto = require("crypto");
 const sendEmail = require("../../utils/sendMail");
 const { Op } = require("sequelize");
@@ -22,7 +22,11 @@ exports.createTrip = async (req, res) =>{
             email: createBy.email,
             role: "admin",
             status: "accepted"
-        })
+        });
+        await UserExpense.create({
+            tripId: trip.id,
+            userId: user_id,
+        });
         res.status(201).json({message: "Trip created successfully", data: trip});
     }
     catch(e){
@@ -34,7 +38,9 @@ exports.createTrip = async (req, res) =>{
 
 exports.inviteUser = async (req, res) =>{
     try{
-        const {email, tripId} = req.body;
+        const {tripId} = req.params;
+        const {email} = req.body;
+        let {name} = req.body;
         const userId = req.user && req.user.id;
         const findAdmin = await TripMember.findOne({
             where: {
@@ -51,18 +57,28 @@ exports.inviteUser = async (req, res) =>{
         if(itinerary && itinerary.isFinalized){
             return res.status(400).json({message: "Trip is finalized, cannot invite users"});
         }
+        const findTripMember = await TripMember.findOne({ where: { tripId, email } });
+        if(findTripMember){
+            if(findTripMember.status === "accepted"){
+                return res.status(400).json({message: "User is already a member of this trip"});
+            }
+            else if(findTripMember.status === "invited"){
+                return res.status(400).json({message: "User is already invited to this trip"});
+            }
+        };
+        const findUser = await UserAuth.findOne({ where: { email } });
+        if(findUser) name = findUser.name;
         const randomToken = Crypto.randomBytes(32).toString("hex");
-        const placeholderName = (email && email.split('@')[0]) || 'Invited User';
         await TripMember.create(
             {
-                tripId,
+                tripId, 
                 email,
-                name: placeholderName,
+                name: name,
                 status: "invited",
                 inviteToken: randomToken,
                 inviteExpire: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24hrs
             }
-        )
+        );
         const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
         const inviteLink = `${FRONTEND_URL.replace(/\/$/, '')}/join-trip?token=${randomToken}`;
         try{
@@ -86,6 +102,9 @@ exports.inviteUser = async (req, res) =>{
 exports.verifyInvite = async (req, res) =>{
     try{
         const {token} = req.query;
+        if(!token){
+            return res.status(400).json({ message: "Missing invite token" });
+        }
         const findInvite = await TripMember.findOne({
             where: {
                 inviteToken: token,
@@ -113,7 +132,11 @@ exports.verifyInvite = async (req, res) =>{
 
 exports.acceptInvite = async (req, res) =>{
     try{
-        const {token, name, password} = req.body;
+        const {token} = req.query;
+        const {name, password} = req.body;
+        if(!token){
+            return res.status(400).json({ message: 'Missing invite token' });
+        }
         const invite = await TripMember.findOne({ where: { inviteToken: token } });
         if(!invite){
             return res.status(400).json({ message: 'Invalid invite token' });
@@ -128,10 +151,15 @@ exports.acceptInvite = async (req, res) =>{
             });
         }
         invite.userId = user.id;
+        invite.name = name;
         invite.status = "accepted";
         invite.inviteToken = null;
         invite.inviteExpire = null;
         await invite.save();
+        await UserExpense.create({
+            tripId: invite.tripId,
+            userId: user.id,
+        });
         const tokenJwt = jwt.sign({id : user.id}, process.env.JWT_SECRET, {expiresIn: "1h"});
         return res.status(200).json({
             message: "Joined trip successfully",

@@ -8,7 +8,6 @@ const {
     rejectSlot,
     updateSlot,
     deleteSlot,
-    deleteTrip
 } = require("../controllers/createItinerary");
 
 const authMiddleware = require('../middlewares/authMiddleware');
