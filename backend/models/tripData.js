@@ -18,10 +18,10 @@ const tripDataDefinition = {
     allowNull: false
   },
   totalDays:{
-    type: DataTypes.NUMBER
+    type: DataTypes.INTEGER
   },
   budget: {
-    type: DataTypes.NUMBER,
+    type: DataTypes.INTEGER,
     allowNull: false
   },
   cover_img: {
