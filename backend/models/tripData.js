@@ -21,7 +21,8 @@ const tripDataDefinition = {
     type: DataTypes.INTEGER
   },
   budget: {
-    type: DataTypes.DECIMAL(10, 2)
+    type: DataTypes.INTEGER,
+    allowNull: false
   },
   cover_img: {
     type: DataTypes.STRING,

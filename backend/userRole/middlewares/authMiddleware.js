@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
+const { UserAuth } = require("../../config/db");
 
-function authMiddleware(req, res, next) {
+async function authMiddleware(req, res, next) {
   //const token = req.cookies?.token || (req.headers.authorization && req.headers.authorization.startsWith("Bearer ") ? req.headers.authorization.split(" ")[1] : null);
   const token = req.cookies.token;
   if (!token) {
@@ -9,7 +10,11 @@ function authMiddleware(req, res, next) {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = { id: decoded.id };
+    const user = await UserAuth.findByPk(decoded.id);
+    if (!user) {
+      return res.status(401).json({ message: "User not found" });
+    }
+    req.user = user;
     next();
   } catch (e) {
     console.error("Auth middleware error", e);
