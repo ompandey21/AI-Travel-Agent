@@ -99,6 +99,8 @@ const corsOptions = {
   credentials: true,
 };
 app.use(cors(corsOptions));
+app.use(express.json());
+app.use(cookieParser());
 app.use("/api/auth", authRoutes);
 app.use("/api/trips", createTripRoutes);
 app.use("/api/read-trips", readTripRoutes);
