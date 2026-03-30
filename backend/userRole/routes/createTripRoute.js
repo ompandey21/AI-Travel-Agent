@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const upload =require('../../config/multer.js');
 
 const {
   createTrip,
@@ -15,7 +16,7 @@ const isTripAdmin = require("../middlewares/isTripAdmin");
 const validate = require("../middlewares/validate");
 const { createTripSchema, inviteSchema } = require("../../validations/tripValidator");
 
-router.post("/create-trip", auth ,validate(createTripSchema), createTrip);
+router.post("/create-trip", auth, upload.single('cover_img'), createTrip);
 router.post("/invite-user/:tripId", auth ,validate(inviteSchema) , inviteUser);
 router.get("/verify-invite", verifyInvite);
 router.post("/accept-invite", acceptInvite);
