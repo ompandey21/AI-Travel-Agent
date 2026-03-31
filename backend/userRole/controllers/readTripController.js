@@ -6,22 +6,40 @@ exports.getMyTrips = async (req, res) => {
     const userId = req.user.id;
 
     const trips = await TripMember.findAll({
-      where: { userId, status: "accepted" },
-      include: [{ model: TripData, as: 'trip' }]
+      where: {
+        userId,
+        status: "accepted",
+      },
+      include: [
+        {
+          model: TripData,
+          as: "trip",
+        },
+      ],
+      order: [["createdAt", "DESC"]],
     });
 
-    res.status(200).json(
-      trips.map(t => ({
+    const formatted = trips
+      .filter(t => t.trip)
+      .map(t => ({
         tripId: t.trip.id,
+        name: t.trip.name,
         destination: t.trip.destination,
-        date: t.trip.date,
+        startDate: t.trip.startDate,
+        endDate: t.trip.endDate,
+        totalDays: t.trip.totalDays,
         budget: t.trip.budget,
         cover_img: t.trip.cover_img,
-        role: t.role
-      }))
-    );
+        role: t.role,
+      }));
+
+    res.status(200).json({
+      message: "Trips fetched successfully",
+      data: formatted,
+    });
+
   } catch (e) {
-    console.error("Get my trips error", e);
+    console.error("Get my trips error:", e);
     res.status(500).json({ message: "Internal server error" });
   }
 };

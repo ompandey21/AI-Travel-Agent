@@ -5,10 +5,12 @@ import Navbar from "./Components/Navbar/Navbar";
 import ProtectedRoute from "./utils/ProtectedRoute";
 import TripCreationPage from "./Components/CreateTrip/TripForm";
 import MyTrip from "./Components/CreateTrip/MyTrip";
+import ProfilePage from "./Components/Profile/ProfilePage";
 function App() {
   return (
     <>
       <Router>
+        
         <Routes>
           <Route path="/auth" element={<Auth />} />
           <Route path="/auth/createpassword/:token" element={<Auth />} />
@@ -26,6 +28,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <MyTrip />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
               </ProtectedRoute>
             }
           />

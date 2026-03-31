@@ -129,7 +129,7 @@ export default function AuthForm(){
             const data = res?.data
 
             if (mode === 'login' || mode === 'signup') {
-            navigate('/')
+            navigate('/profile')
             } else if (mode === 'forgot') {
             setMessage('OTP sent — check your email and enter OTP below')
             setMode('reset')

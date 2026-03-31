@@ -1,15 +1,11 @@
-// CLEAN + FUN TRIP FORM UI (SPLIT LAYOUT)
-
 import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  MapPin, Calendar, DollarSign, ImageIcon, Plane,
-  Search, Upload, CheckCircle, ArrowRight, Loader2,
-  Sparkles, X
+  ImageIcon
 } from "lucide-react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import video from '../../media/Traveling.mp4'
+import video from '../../media/Traveling.mp4';
 
 
 
@@ -38,12 +34,13 @@ export default function TripCreationPage() {
   const [form, setForm] = useState({
     name: "", destination: "", startDate: "", endDate: "", budget: 3000, cover: null,
   });
+  const [destinationInput, setDestinationInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [errors, setErrors] = useState({});
 
-  const filteredCities = form.destination.trim().length > 0
-    ? INDIAN_CITIES.filter(c => c.toLowerCase().includes(form.destination.toLowerCase())).slice(0, 8)
+  const filteredCities = destinationInput.trim().length > 0
+    ? INDIAN_CITIES.filter(c => c.toLowerCase().includes(destinationInput.toLowerCase())).slice(0, 8)
     : [];
   const navigate = useNavigate();
 
@@ -63,8 +60,7 @@ export default function TripCreationPage() {
     return errs;
   };
 
-  // ✅ FIX: was sending plain JSON — File objects can't be serialized.
-  // Now uses FormData with multipart/form-data so the file actually reaches the server.
+
   const handleSubmit = async () => {
     const errs = validate();
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
@@ -143,16 +139,26 @@ export default function TripCreationPage() {
               className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-[#3D9A9B] ${errors.name ? "border-red-400" : "border-gray-200"}`}
             />
             {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
-
-            {/* DESTINATION WITH AUTOCOMPLETE */}
             <div className="relative">
               <input
-                placeholder="Destination"
-                value={form.destination}
-                onChange={e => { update("destination")(e.target.value); setShowSuggestions(true); setErrors(er => ({ ...er, destination: undefined })); }}
-                onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-                onFocus={() => form.destination && setShowSuggestions(true)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#3D9A9B] focus:outline-none"
+                placeholder="Search destination"
+                value={form.destination ? form.destination : destinationInput}
+                onChange={e => {
+                  if (form.destination) {
+                    // Clear the confirmed selection so user can search again
+                    update("destination")("");
+                  }
+                  setDestinationInput(e.target.value);
+                  setShowSuggestions(true);
+                  setErrors(er => ({ ...er, destination: undefined }));
+                }}
+                onBlur={() => setTimeout(() => {
+                  setShowSuggestions(false);
+                  // If nothing was confirmed from the list, clear the typed text
+                  if (!form.destination) setDestinationInput("");
+                }, 150)}
+                onFocus={() => setShowSuggestions(true)}
+                className={`w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-[#3D9A9B] focus:outline-none ${errors.destination ? "border-red-400" : "border-gray-200"}`}
                 autoComplete="off"
               />
               {showSuggestions && filteredCities.length > 0 && (
@@ -160,7 +166,12 @@ export default function TripCreationPage() {
                   {filteredCities.map(city => (
                     <li
                       key={city}
-                      onMouseDown={() => { update("destination")(city); setShowSuggestions(false); }}
+                      onMouseDown={() => {
+                        update("destination")(city);
+                        setDestinationInput("");
+                        setShowSuggestions(false);
+                        setErrors(er => ({ ...er, destination: undefined }));
+                      }}
                       className="px-4 py-2.5 text-sm text-gray-700 hover:bg-[#3D9A9B]/10 hover:text-[#3D9A9B] cursor-pointer transition-colors"
                     >
                       {city}
@@ -195,14 +206,14 @@ export default function TripCreationPage() {
               </div>
             </div>
 
-            {/* BUDGET — level-based stops */}
+            
             {(() => {
               const LEVELS = [1000,2000,3000,4000,5000,6000,7000,8000,9000,10000,12000,14000,16000,18000,20000];
               const idx = LEVELS.indexOf(form.budget) === -1 ? 0 : LEVELS.indexOf(form.budget);
               return (
                 <div>
                   <p className="text-sm mb-2 text-gray-600">
-                    Budget: <span className="font-semibold text-[#3D9A9B]">₹{form.budget.toLocaleString("en-IN")}</span>
+                    Budget <span className="text-gray-400 font-normal">(per member)</span>: <span className="font-semibold text-[#3D9A9B]">₹{form.budget.toLocaleString("en-IN")}</span>
                   </p>
                   <input
                     type="range"
@@ -219,8 +230,6 @@ export default function TripCreationPage() {
                 </div>
               );
             })()}
-
-            {/* IMAGE UPLOAD */}
             <label
               htmlFor="cover-upload"
               className="flex items-center gap-3 w-full px-4 py-3 rounded-xl border border-gray-200 cursor-pointer hover:border-[#3D9A9B] hover:bg-gray-50 transition-all"
