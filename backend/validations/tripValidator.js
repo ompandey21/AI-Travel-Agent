@@ -10,6 +10,15 @@ const createTripSchema = Joi.object({
             'string.min': 'Name must be atleast 2 characters long',
             'string.max': 'Name cannot excess 100 characters',
         }),
+    startLocation: Joi.string()
+        .min(2)
+        .max(100)
+        .required()
+        .messages({
+            'string.empty': 'Destination is required',
+            'string.min': 'Destination must be atleast 2 characters long',
+            'string.max': 'Destination cannot excess 100 characters',
+        }),
     destination: Joi.string()
         .min(2)
         .max(100)
@@ -56,16 +65,7 @@ const inviteSchema = Joi.object({
         .messages({
             'string.email': 'Enter a valid email address',
             'string.empty': 'Email is required',
-        }),
-    name: Joi.string()
-        .min(2)
-        .max(100)
-        .required()
-        .messages({
-            'string.empty': 'Name is required',
-            'string.min': 'Name must be atleast 2 characters long',
-            'string.max': 'Name cannot excess 100 characters',
-        }),
+        })
 });
 
 module.exports = {

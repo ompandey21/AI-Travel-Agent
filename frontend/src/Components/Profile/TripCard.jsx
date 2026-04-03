@@ -39,6 +39,7 @@ const TripCard = ({ trip, index , useBreakpoint}) => {
       initial={{ opacity: 0, y: 18 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
+      onClick={() => navigate(`/trip/${trip.tripId}`)}
       transition={{ duration: 0.36, delay: index * 0.05, ease: [0.22, 1, 0.36, 1] }}
       whileHover={{ y: -3, transition: { duration: 0.18 } }}
       style={{
@@ -59,6 +60,9 @@ const TripCard = ({ trip, index , useBreakpoint}) => {
           position: "absolute", inset: 0,
           width: "100%", height: "100%",
           objectFit: "cover", objectPosition: "right center",
+          zIndex : 0
+
+
         }}
       />
 
@@ -72,7 +76,7 @@ const TripCard = ({ trip, index , useBreakpoint}) => {
         WebkitBackdropFilter: "blur(20px) saturate(1.3)",
         ...(isMobile ? {} : {
           WebkitMaskImage: "linear-gradient(90deg, black 0%, black 50%, transparent 70%)",
-          maskImage: "linear-gradient(90deg, black 0%, black 50%, transparent 70%)",
+          maskImage: "linear-gradient(90deg, black 0%, black 70%, transparent 90%)",
         }),
       }} />
 
@@ -83,8 +87,6 @@ const TripCard = ({ trip, index , useBreakpoint}) => {
         justifyContent: "space-between",
         padding: isMobile ? "14px 16px" : "16px 20px",
         ...(isMobile ? {} : {
-          WebkitMaskImage: "linear-gradient(90deg, black 0%, black 48%, transparent 66%)",
-          maskImage: "linear-gradient(90deg, black 0%, black 48%, transparent 66%)",
         }),
       }}>
         {/* top row */}
@@ -150,10 +152,10 @@ const TripCard = ({ trip, index , useBreakpoint}) => {
             </div>
           </div>
 
-          <motion.button
+          {/* <motion.button
             whileHover={{ background: "rgba(94,234,212,0.16)", borderColor: "rgba(94,234,212,0.4)", scale: 1.04 }}
             whileTap={{ scale: 0.96 }}
-            onClick={() => navigate(`/trip/${trip.id}`)}
+            
             style={{
               display: "flex", alignItems: "center", gap: 5,
               background: "rgba(255,255,255,0.08)",
@@ -163,10 +165,11 @@ const TripCard = ({ trip, index , useBreakpoint}) => {
               fontFamily: "'Satoshi', sans-serif", letterSpacing: "0.02em",
               transition: "background 0.2s, border-color 0.2s",
               flexShrink: 0,
+              zIndex: 10
             }}
           >
             Open <ArrowUpRight size={13} strokeWidth={2.5} />
-          </motion.button>
+          </motion.button> */}
         </div>
       </div>
     </motion.div>

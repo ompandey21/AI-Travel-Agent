@@ -20,8 +20,8 @@ exports.getMyTrips = async (req, res) => {
     });
 
     const formatted = trips
-      .filter(t => t.trip)
-      .map(t => ({
+      .filter((t) => t.trip)
+      .map((t) => ({
         tripId: t.trip.id,
         name: t.trip.name,
         destination: t.trip.destination,
@@ -37,13 +37,11 @@ exports.getMyTrips = async (req, res) => {
       message: "Trips fetched successfully",
       data: formatted,
     });
-
   } catch (e) {
     console.error("Get my trips error:", e);
     res.status(500).json({ message: "Internal server error" });
   }
 };
-
 
 exports.getTripById = async (req, res) => {
   try {
@@ -54,15 +52,32 @@ exports.getTripById = async (req, res) => {
       where: {
         tripId,
         userId,
-        status: "accepted"
-      }
+        status: "accepted",
+      },
     });
 
     if (!member) {
       return res.status(403).json({ message: "Not authorized" });
     }
 
-    const trip = await TripData.findByPk(tripId);
+    const trip = await TripData.findByPk(tripId, {
+      attributes: [
+        "id",
+        "name",
+        "startLocation",
+        "destination",
+        "startLat",
+        "startLng",
+        "endLat",
+        "endLng",
+        "startDate",
+        "endDate",
+        "totalDays",
+        "budget",
+        "cover_img",
+        "created_by",
+      ],
+    });
     if (!trip) {
       return res.status(404).json({ message: "Trip not found" });
     }

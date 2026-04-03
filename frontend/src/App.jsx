@@ -6,6 +6,7 @@ import ProtectedRoute from "./utils/ProtectedRoute";
 import TripCreationPage from "./Components/CreateTrip/TripForm";
 import MyTrip from "./Components/CreateTrip/MyTrip";
 import ProfilePage from "./Components/Profile/ProfilePage";
+import TripDashboard from "./Components/Trip/TripDashboard";
 function App() {
   return (
     <>
@@ -24,10 +25,10 @@ function App() {
             }
           />
           <Route
-            path="/myTrip"
+            path="/trip/:id"
             element={
               <ProtectedRoute>
-                <MyTrip />
+                <TripDashboard />
               </ProtectedRoute>
             }
           />

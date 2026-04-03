@@ -13,6 +13,9 @@ const { Op } = require("sequelize");
 const { hashPass } = require("./authController");
 const jwt = require("jsonwebtoken");
 const { createTripSchema } = require("../../validations/tripValidator");
+
+const { getCoordinates } = require("../../utils/geoCode");
+
 exports.createTrip = async (req, res) => {
   try {
     const { error } = createTripSchema.validate(req.body);
@@ -22,23 +25,47 @@ exports.createTrip = async (req, res) => {
         message: error.details[0].message,
       });
     }
-    const { name, destination, startDate, endDate, budget } = req.body;
-    
-    const cover_img = req.file ? req.file.secure_url : null;
-    const user_id = req.user && req.user.id;
-    const findTrip = await TripData.findOne({
-      where: { name, created_by: user_id },
+
+    const {
+      name,
+      startLocation,
+      destination,
+      startDate,
+      endDate,
+      budget
+    } = req.body;
+
+    const user_id = req.user?.id;
+
+    const existing = await TripData.findOne({
+      where: { name, created_by: user_id }
     });
-    if (findTrip) {
-      return res
-        .status(400)
-        .json({ message: "You already have a trip with this name" });
+
+    if (existing) {
+      return res.status(400).json({
+        message: "You already have a trip with this name"
+      });
     }
+
+    // 🔥 fetch coordinates
+    const startCoords = await getCoordinates(startLocation);
+    const endCoords = await getCoordinates(destination);
+
+    if (!startCoords || !endCoords) {
+      return res.status(400).json({
+        message: "Invalid locations provided"
+      });
+    }
+
     const totalDays = Math.ceil(
-      (new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24),
+      (new Date(endDate) - new Date(startDate)) / 86400000
     );
+
+    const cover_img = req.file ? req.file.secure_url : null;
+
     const trip = await TripData.create({
       name,
+      startLocation,
       destination,
       startDate,
       endDate,
@@ -46,23 +73,36 @@ exports.createTrip = async (req, res) => {
       budget,
       cover_img,
       created_by: user_id,
+
+      startLat: startCoords.lat,
+      startLng: startCoords.lng,
+      endLat: endCoords.lat,
+      endLng: endCoords.lng
     });
-    const createBy = await UserAuth.findByPk(user_id);
+
+    const user = await UserAuth.findByPk(user_id);
+
     await TripMember.create({
       userId: user_id,
       tripId: trip.id,
-      name: createBy.name,
-      email: createBy.email,
+      name: user.name,
+      email: user.email,
       role: "admin",
-      status: "accepted",
+      status: "accepted"
     });
+
     await UserExpense.create({
       tripId: trip.id,
-      userId: user_id,
+      userId: user_id
     });
-    res.status(201).json({ message: "Trip created successfully", data: trip });
+
+    res.status(201).json({
+      message: "Trip created successfully",
+      data: trip
+    });
+
   } catch (e) {
-    console.error("Internal server error", e);
+    console.error("Create trip error", e);
     res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -70,8 +110,8 @@ exports.createTrip = async (req, res) => {
 exports.inviteUser = async (req, res) => {
   try {
     const { tripId } = req.params;
-    const { email } = req.body;
-    let { name } = req.body;
+    const { email} = req.body;
+    let username = "";
     const userId = req.user && req.user.id;
     const findAdmin = await TripMember.findOne({
       where: {
@@ -107,12 +147,12 @@ exports.inviteUser = async (req, res) => {
       }
     }
     const findUser = await UserAuth.findOne({ where: { email } });
-    if (findUser) name = findUser.name;
+    if (findUser) username = findUser.name;
     const randomToken = Crypto.randomBytes(32).toString("hex");
     await TripMember.create({
       tripId,
       email,
-      name: name,
+      name: username,
       status: "invited",
       inviteToken: randomToken,
       inviteExpire: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24hrs

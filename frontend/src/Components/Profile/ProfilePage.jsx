@@ -116,6 +116,7 @@ export default function ProfilePage() {
     try {
       const r = await axios.get(`${API_BASE}/api/read-trips/my-trips`, { withCredentials: true });
       setTrips(r.data.data);
+      
     } catch (e) { console.log(e); }
   };
 
