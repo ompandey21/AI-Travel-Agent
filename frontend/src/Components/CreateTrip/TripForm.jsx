@@ -32,12 +32,18 @@ const INDIAN_CITIES = [
 
 export default function TripCreationPage() {
   const [form, setForm] = useState({
-    name: "", destination: "", startDate: "", endDate: "", budget: 3000, cover: null,
+    name: "", startLocation: "", destination: "", startDate: "", endDate: "", budget: 3000, cover: null,
   });
+  const [startLocationInput, setStartLocationInput] = useState("");
   const [destinationInput, setDestinationInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [showStartSuggestions, setShowStartSuggestions] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [errors, setErrors] = useState({});
+
+  const filteredStartCities = startLocationInput.trim().length > 0
+    ? INDIAN_CITIES.filter(c => c.toLowerCase().includes(startLocationInput.toLowerCase())).slice(0, 8)
+    : [];
 
   const filteredCities = destinationInput.trim().length > 0
     ? INDIAN_CITIES.filter(c => c.toLowerCase().includes(destinationInput.toLowerCase())).slice(0, 8)
@@ -50,6 +56,7 @@ export default function TripCreationPage() {
     const errs = {};
     const today = new Date().toISOString().split("T")[0];
     if (!form.name.trim()) errs.name = "Trip name is required.";
+    if (!form.startLocation.trim()) errs.startLocation = "Start location is required.";
     if (!form.destination.trim()) errs.destination = "Destination is required.";
     if (!form.startDate) errs.startDate = "Start date is required.";
     else if (form.startDate < today) errs.startDate = "Start date can't be in the past.";
@@ -69,6 +76,7 @@ export default function TripCreationPage() {
     try {
       const formData = new FormData();
       formData.append("name", form.name);
+      formData.append("startLocation", form.startLocation);
       formData.append("destination", form.destination);
       formData.append("startDate", form.startDate);
       formData.append("endDate", form.endDate);
@@ -116,7 +124,7 @@ export default function TripCreationPage() {
         </div>
 
         {/* RIGHT FORM */}
-        <div className="flex items-center justify-center p-6 md:p-10">
+        <div className="flex items-center justify-center p-6 md:p-10 overflow-y-auto">
 
           <div className="w-full max-w-md space-y-6">
 
@@ -139,6 +147,46 @@ export default function TripCreationPage() {
               className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-[#3D9A9B] ${errors.name ? "border-red-400" : "border-gray-200"}`}
             />
             {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
+            <div className="relative">
+              <input
+                placeholder="Starting location"
+                value={form.startLocation ? form.startLocation : startLocationInput}
+                onChange={e => {
+                  if (form.startLocation) {
+                    update("startLocation")("");
+                  }
+                  setStartLocationInput(e.target.value);
+                  setShowStartSuggestions(true);
+                  setErrors(er => ({ ...er, startLocation: undefined }));
+                }}
+                onBlur={() => setTimeout(() => {
+                  setShowStartSuggestions(false);
+                  if (!form.startLocation) setStartLocationInput("");
+                }, 150)}
+                onFocus={() => setShowStartSuggestions(true)}
+                className={`w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-[#3D9A9B] focus:outline-none ${errors.startLocation ? "border-red-400" : "border-gray-200"}`}
+                autoComplete="off"
+              />
+              {showStartSuggestions && filteredStartCities.length > 0 && (
+                <ul className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                  {filteredStartCities.map(city => (
+                    <li
+                      key={city}
+                      onMouseDown={() => {
+                        update("startLocation")(city);
+                        setStartLocationInput("");
+                        setShowStartSuggestions(false);
+                        setErrors(er => ({ ...er, startLocation: undefined }));
+                      }}
+                      className="px-4 py-2.5 text-sm text-gray-700 hover:bg-[#3D9A9B]/10 hover:text-[#3D9A9B] cursor-pointer transition-colors"
+                    >
+                      {city}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            {errors.startLocation && <p className="text-xs text-red-500 mt-1">{errors.startLocation}</p>}
             <div className="relative">
               <input
                 placeholder="Search destination"

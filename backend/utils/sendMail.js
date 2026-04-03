@@ -23,6 +23,7 @@ async function sendEmail(to, subject, text){
             subject,
             text,
         });
+        console.log("Email Sent");
     }
     catch(e){
         console.error("sendEmail error:", e && e.message ? e.message : e);

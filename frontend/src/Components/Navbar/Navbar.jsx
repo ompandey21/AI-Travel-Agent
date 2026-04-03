@@ -37,8 +37,9 @@ const Navbar = () => {
 
       <div className="hidden md:flex gap-12 text-sm opacity-80">
         <Link to="/">Home</Link>
+        {user ? <Link to="/profile">My Trips</Link> : <a href="#">Destinations</a>}
         <a href="#">Explore</a>
-        <a href="#">Destinations</a>
+        <a href="#">Contact</a>
         <a href="#">Contact</a>
       </div>
 
