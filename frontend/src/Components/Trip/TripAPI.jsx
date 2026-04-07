@@ -35,3 +35,12 @@ export const checkItineraryExists = async (tripId) => {
     throw err;
   }
 };
+
+export const acceptRequest = async (token) => {
+  try{
+    const res = await axios.get(`${API}/trips/accept-invite`, { params: { token }, withCredentials: true })
+    return res.data;
+  } catch (err) {
+    throw err;
+  }
+}
