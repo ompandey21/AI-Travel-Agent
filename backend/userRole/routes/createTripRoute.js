@@ -19,7 +19,7 @@ const { createTripSchema, inviteSchema } = require("../../validations/tripValida
 router.post("/create-trip", auth, upload.single('cover_img'), createTrip);
 router.post("/invite-user/:tripId", auth ,validate(inviteSchema) , inviteUser);
 router.get("/verify-invite", verifyInvite);
-router.post("/accept-invite", acceptInvite);
+router.get("/accept-invite", acceptInvite);
 router.get("/:id/members", auth, getMembers);
 router.delete('/delete-trip/:tripId', auth, isTripAdmin, deleteTrip);
 

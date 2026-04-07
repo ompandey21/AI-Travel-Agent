@@ -7,6 +7,7 @@ import TripCreationPage from "./Components/CreateTrip/TripForm";
 import MyTrip from "./Components/CreateTrip/MyTrip";
 import ProfilePage from "./Components/Profile/ProfilePage";
 import TripDashboard from "./Components/Trip/TripDashboard";
+import InviteConfirmPage from "./Components/Invite/InvitePage";
 function App() {
   return (
     <>
@@ -15,6 +16,7 @@ function App() {
         <Routes>
           <Route path="/auth" element={<Auth />} />
           <Route path="/auth/createpassword/:token" element={<Auth />} />
+          <Route path="/join-trip" element={<InviteConfirmPage />} />
           <Route path="/" element={<Home />} />
           <Route
             path="/createTrip"

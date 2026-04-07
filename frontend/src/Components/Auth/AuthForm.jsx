@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import AuthFooter from './AuthFooter'
 import { login as apiLogin, signup as apiSignup, forgetPassword as apiForget, createPassword as apiCreatePassword, verifyResetToken as apiVerifyReset } from './authApi'
+import { acceptRequest } from '../Trip/TripAPI'
 
 export default function AuthForm(){
     const [mode, setMode] = useState('login')
@@ -13,6 +14,10 @@ export default function AuthForm(){
     const [resetUrl, setResetUrl] = useState('')
     const navigate = useNavigate()
     const { token } = useParams()
+    const [searchParams] = useSearchParams();
+
+    const inviteToken = searchParams.get("token");
+
 
     const onChange = (e) => setForm(f => ({ ...f, [e.target.name]: e.target.value }))
 
@@ -40,6 +45,12 @@ export default function AuthForm(){
         })()
         }
     }, [token])
+
+    useEffect(() => {
+        if(inviteToken) {
+            setMode('signup')
+        };
+    }, [inviteToken]);
 
     const submit = async (e) => {
         e.preventDefault()
@@ -115,6 +126,12 @@ export default function AuthForm(){
             payload.password = form.password
             payload.cpassword = form.cpassword
             res = await apiSignup(payload)
+            if(inviteToken){
+                await acceptRequest(inviteToken)
+                .then(navigate('/profile'))
+                .catch((e) => console.log(e));
+            }
+            
             } 
             else if (mode === 'forgot') {
             res = await apiForget(payload)
