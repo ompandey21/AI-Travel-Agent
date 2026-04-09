@@ -28,6 +28,10 @@ const expenseSettlementDef = {
     clearedAt: {
         type: DataTypes.DATE,
         allowNull: true
+    },
+    confirmedAt: {
+        type: DataTypes.DATE,
+        allowNull: true
     }
 };
 module.exports = expenseSettlementDef;

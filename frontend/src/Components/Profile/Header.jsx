@@ -39,11 +39,6 @@ const Header = () => {
         alignItems: "center",
         justifyContent: "space-between",
         padding: "18px 56px",
-        /* frosted glass so it works on video bg without a separate overlay */
-        // background: "rgba(6,10,24,0.45)",
-        // backdropFilter: "blur(20px) saturate(1.4)",
-        // WebkitBackdropFilter: "blur(20px) saturate(1.4)",
-        // borderBottom: "1px solid rgba(255,255,255,0.07)",
         fontFamily: "'Satoshi', sans-serif",
       }}
     >

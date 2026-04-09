@@ -13,7 +13,7 @@ const ensureUserExpenseRecord = async (tripId, userId) => {
 exports.addExpense = async (req, res) => {
     try {
         const { tripId } = req.params;
-        const { title, amount, splitType, splits } = req.body;
+        const { title, amount, splitType, splits, participants } = req.body;
         const paidBy = req.user.id;
 
         if (!title || !amount || amount <= 0) {
@@ -28,29 +28,51 @@ exports.addExpense = async (req, res) => {
         const totalAmount = parseFloat(amount);
 
         if (splitType === 'equal') {
-            const tripMembers = await TripMember.findAll({ where: { tripId } });
-            if (tripMembers.length === 0) {
-                return res.status(400).json({ message: "No members found for this trip" });
+            if (!participants || !Array.isArray(participants) || participants.length === 0) {
+                return res.status(400).json({ message: "Participants required for equal split" });
             }
 
-            const shareAmount = totalAmount / tripMembers.length;
-
-            const expense = await ExpenseData.create({ tripId: parseInt(tripId), title, amount: totalAmount, paidBy, splitType: 'equal' });
-
-            for (const member of tripMembers) {
-                await ensureUserExpenseRecord(tripId, member.userId);
-
-                await ExpenseMember.create({ userId: member.userId, expenseId: expense.id, shareAmount: shareAmount });
-
-                if (member.userId === paidBy) {
-                    await UserExpense.increment('totalPaid', { by: totalAmount, where: { tripId, userId: member.userId } });
-                    await UserExpense.increment('totalOwed', { by: shareAmount, where: { tripId, userId: member.userId } });
-                } else {
-                    await UserExpense.increment('totalOwed', { by: shareAmount, where: { tripId, userId: member.userId } });
+            for (const userId of participants) {
+                const memberExists = await TripMember.findOne({ where: { tripId, userId } });
+                if (!memberExists) {
+                    return res.status(400).json({ message: `User ${userId} is not a member of this trip` });
                 }
             }
 
-            return res.status(201).json({ message: "Expense added and split equally among members", expense });
+            const shareAmount = totalAmount / participants.length;
+
+            const expense = await ExpenseData.create({
+                tripId: parseInt(tripId),
+                title,
+                amount: totalAmount,
+                paidBy,
+                splitType: 'equal'
+            });
+
+            for (const userId of participants) {
+                await ensureUserExpenseRecord(tripId, userId);
+
+                await ExpenseMember.create({
+                    userId,
+                    expenseId: expense.id,
+                    shareAmount
+                });
+
+                await UserExpense.increment('totalOwed', {
+                    by: shareAmount,
+                    where: { tripId, userId }
+                });
+            }
+
+            await UserExpense.increment('totalPaid', {
+                by: totalAmount,
+                where: { tripId, userId: paidBy }
+            });
+
+            return res.status(201).json({
+                message: "Expense added and split among selected participants",
+                expense
+            });
         }
 
         if (splitType === 'custom') {
@@ -67,7 +89,9 @@ exports.addExpense = async (req, res) => {
                 const amountValue = Number(split.amount);
 
                 if (!userId || Number.isNaN(amountValue) || amountValue < 0) {
-                    return res.status(400).json({ message: `Invalid split data at index ${idx}: userId/userid must be present and amount must be a non-negative number` });
+                    return res.status(400).json({
+                        message: `Invalid split data at index ${idx}`
+                    });
                 }
 
                 totalSplitAmount += amountValue;
@@ -75,34 +99,67 @@ exports.addExpense = async (req, res) => {
             }
 
             if (Math.abs(totalSplitAmount - totalAmount) > 0.01) {
-                return res.status(400).json({ message: `Split amounts (${totalSplitAmount}) don't match total expense (${totalAmount})` });
+                return res.status(400).json({
+                    message: `Split amounts (${totalSplitAmount}) don't match total expense (${totalAmount})`
+                });
+            }
+
+            const userIds = normalizedSplits.map(s => s.userId);
+            const uniqueIds = new Set(userIds);
+
+            if (uniqueIds.size !== userIds.length) {
+                return res.status(400).json({ message: "Duplicate users in splits" });
             }
 
             for (const split of normalizedSplits) {
-                const memberExists = await TripMember.findOne({ where: { tripId, userId: split.userId } });
+                const memberExists = await TripMember.findOne({
+                    where: { tripId, userId: split.userId }
+                });
+
                 if (!memberExists) {
-                    return res.status(400).json({ message: `User ${split.userId} is not a member of this trip` });
+                    return res.status(400).json({
+                        message: `User ${split.userId} is not a member of this trip`
+                    });
                 }
             }
 
-            const expense = await ExpenseData.create({ tripId: parseInt(tripId), title, amount: totalAmount, paidBy, splitType: 'custom' });
+            const expense = await ExpenseData.create({
+                tripId: parseInt(tripId),
+                title,
+                amount: totalAmount,
+                paidBy,
+                splitType: 'custom'
+            });
 
             for (const split of normalizedSplits) {
                 await ensureUserExpenseRecord(tripId, split.userId);
-                await ExpenseMember.create({ userId: split.userId, expenseId: expense.id, shareAmount: split.amount });
 
-                if (split.userId === paidBy) {
-                    await UserExpense.increment('totalPaid', { by: totalAmount, where: { tripId, userId: split.userId } });
-                    await UserExpense.increment('totalOwed', { by: split.amount, where: { tripId, userId: split.userId } });
-                } else {
-                    await UserExpense.increment('totalOwed', { by: split.amount, where: { tripId, userId: split.userId } });
-                }
+                await ExpenseMember.create({
+                    userId: split.userId,
+                    expenseId: expense.id,
+                    shareAmount: split.amount
+                });
+
+                await UserExpense.increment('totalOwed', {
+                    by: split.amount,
+                    where: { tripId, userId: split.userId }
+                });
             }
 
-            return res.status(201).json({ message: "Expense added with custom splits", expense });
+            await UserExpense.increment('totalPaid', {
+                by: totalAmount,
+                where: { tripId, userId: paidBy }
+            });
+
+            return res.status(201).json({
+                message: "Expense added with custom splits",
+                expense
+            });
         }
 
-        return res.status(400).json({ message: "Invalid split type. Use 'equal' or 'custom'" });
+        return res.status(400).json({
+            message: "Invalid split type. Use 'equal' or 'custom'"
+        });
 
     } catch (err) {
         console.error("Internal server error", err);
@@ -117,6 +174,7 @@ exports.settleExpense = async (req, res) => {
         const payerId = req.user.id;
 
         if (!receiverId || !amount || amount <= 0) {
+            if(!receiverId) return res.status(400).json({ message: "Invalid reciever" });
             return res.status(400).json({ message: "Invalid settlement data" });
         }
 
@@ -137,25 +195,128 @@ exports.settleExpense = async (req, res) => {
         const receiverBalance = receiverExpense.totalPaid - receiverExpense.totalOwed;
 
         if (payerBalance >= 0 || receiverBalance <= 0) {
-            return res.status(400).json({ message: "Invalid settlement: Payer must owe money and receiver must be owed money" });
+            return res.status(400).json({
+                message: "Invalid settlement: Payer must owe money and receiver must be owed money"
+            });
         }
 
         const settlementAmount = parseFloat(amount);
         const maxSettlement = Math.min(Math.abs(payerBalance), receiverBalance);
 
         if (settlementAmount > maxSettlement) {
-            return res.status(400).json({ message: `Settlement amount too high. Maximum allowed: ${maxSettlement}` });
+            return res.status(400).json({
+                message: `Settlement amount too high. Maximum allowed: ${maxSettlement}`
+            });
         }
 
-        const settlement = await ExpenseSettlement.create({ tripId: parseInt(tripId), payerId, receiverId, amount: settlementAmount, status: 'completed', clearedAt: new Date() });
+        const existingPending = await ExpenseSettlement.findOne({
+            where: {
+                tripId,
+                payerId,
+                receiverId,
+                status: 'pending'
+            }
+        });
 
-        await UserExpense.decrement('totalOwed', { by: settlementAmount, where: { tripId, userId: payerId } });
-        await UserExpense.decrement('totalPaid', { by: settlementAmount, where: { tripId, userId: receiverId } });
+        if (existingPending) {
+            return res.status(400).json({
+                message: "A pending settlement already exists between these users"
+            });
+        }
 
-        return res.status(200).json({ message: "Settlement completed successfully", settlement });
+        const settlement = await ExpenseSettlement.create({
+            tripId: parseInt(tripId),
+            payerId,
+            receiverId,
+            amount: settlementAmount,
+            status: 'pending'
+        });
+
+        await UserExpense.increment('pendingToPay', {
+            by: settlementAmount,
+            where: { tripId, userId: payerId }
+        });
+
+        await UserExpense.increment('pendingToReceive', {
+            by: settlementAmount,
+            where: { tripId, userId: receiverId }
+        });
+
+        return res.status(201).json({
+            message: "Settlement request sent. Awaiting confirmation.",
+            settlement
+        });
 
     } catch (err) {
         console.error("Internal server error", err);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+exports.confirmSettlement = async (req, res) => {
+    try {
+        const { settlementId } = req.params;
+        const userId = req.user.id;
+
+        const settlement = await ExpenseSettlement.findByPk(settlementId);
+
+        if (!settlement) {
+            return res.status(404).json({ message: "Settlement not found" });
+        }
+
+        if (settlement.receiverId !== userId) {
+            return res.status(403).json({ message: "Only receiver can confirm this settlement" });
+        }
+
+        if (settlement.status !== 'pending') {
+            return res.status(400).json({ message: "Settlement already processed" });
+        }
+
+        const { tripId, payerId, receiverId, amount } = settlement;
+
+        await ensureUserExpenseRecord(tripId, payerId);
+        await ensureUserExpenseRecord(tripId, receiverId);
+
+        const payerExpense = await UserExpense.findOne({ where: { tripId, userId: payerId } });
+        const receiverExpense = await UserExpense.findOne({ where: { tripId, userId: receiverId } });
+
+        if (payerExpense.pendingToPay < amount || receiverExpense.pendingToReceive < amount) {
+            return res.status(400).json({ message: "Invalid pending balances" });
+        }
+
+        await UserExpense.decrement('pendingToPay', {
+            by: amount,
+            where: { tripId, userId: payerId }
+        });
+
+        await UserExpense.decrement('pendingToReceive', {
+            by: amount,
+            where: { tripId, userId: receiverId }
+        });
+
+        await UserExpense.decrement('totalOwed', {
+            by: amount,
+            where: { tripId, userId: payerId }
+        });
+
+        await UserExpense.decrement('totalPaid', {
+            by: amount,
+            where: { tripId, userId: receiverId }
+        });
+
+        settlement.status = 'completed';
+        settlement.clearedAt = new Date();
+        settlement.confirmedAt = new Date();
+
+        await settlement.save();
+
+        return res.status(200).json({
+            message: "Settlement confirmed successfully",
+            settlement
+        });
+
+    } catch (err) {
+        console.error(err);
         res.status(500).json({ message: "Internal server error" });
     }
 };

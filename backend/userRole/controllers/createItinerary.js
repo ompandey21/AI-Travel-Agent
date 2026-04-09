@@ -24,6 +24,7 @@ exports.createItinerary = async (req, res) => {
 }
 
 exports.createSlot = async(req, res) =>{
+    console.log("Hitting the route");
     try{
         const { dayId } = req.params;
         const {startTime, endTime, activity, imgUrl} = req.body;

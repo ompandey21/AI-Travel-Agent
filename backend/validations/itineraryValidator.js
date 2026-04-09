@@ -1,4 +1,5 @@
 const Joi = require('joi');
+const { activity, imgUrl } = require('../models/itinerary_models/slotsData');
 
 
 const startTime = Joi.string()
@@ -20,6 +21,8 @@ const endTime = Joi.string()
 const createSlotSchema = Joi.object({
     startTime,
     endTime,
+    activity : Joi.string(),
+    imgUrl : Joi.string()
 }).custom((value, helpers) => {
 
     if (value.endTime <= value.startTime) {
@@ -32,7 +35,9 @@ const createSlotSchema = Joi.object({
 
 const updateSlotSchema = Joi.object({
     startTime,
-    endTime
+    endTime,
+    activity : Joi.string(),
+    imgUrl : Joi.string()
 }).custom((value, helpers) => {
 
     if (value.endTime <= value.startTime) {

@@ -30,7 +30,6 @@ const FitBounds = ({ start, end }) => {
 const TripMap = ({ trip }) => {
   const navigate = useNavigate();
   const [hovered, setHovered] = useState(false);
-  // null = still checking, true/false = resolved
   const [hasItinerary, setHasItinerary] = useState(null);
 
   useEffect(() => {
@@ -46,7 +45,7 @@ const TripMap = ({ trip }) => {
   const handleOverlayClick = () => {
     if (hasItinerary === null) return; // still loading, do nothing
     const base = `/trip/${trip.id}`;
-    navigate(hasItinerary ? `${base}/itinerary` : `${base}/createItinerary`);
+    navigate(`${base}/itinerary`);
   };
 
   if (!start || !end) {
