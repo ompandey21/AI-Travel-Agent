@@ -41,7 +41,6 @@ exports.createTrip = async (req, res) => {
       });
     }
 
-    // 🔥 fetch coordinates
     const startCoords = await getCoordinates(startLocation);
     const endCoords = await getCoordinates(destination);
 
@@ -50,6 +49,35 @@ exports.createTrip = async (req, res) => {
         message: "Invalid locations provided",
       });
     }
+    if(startCoords.lat === endCoords.lat && startCoords.lng === endCoords.lng) {
+      return res.status(400).json({
+        message: "Start location and destination cannot be the same",
+      });
+    };
+    
+    const overlappingTrip = await TripData.findOne({
+      where: {
+        [Op.or]: [
+          {
+            startDate: {
+              [Op.between]: [startDate, endDate],
+            },
+          },
+          {
+            endDate: {
+              [Op.between]: [startDate, endDate],
+            },
+          },
+        ],
+        created_by: user_id,
+      },
+    });
+
+    if (overlappingTrip) {
+      return res.status(400).json({
+        message: "Trip dates overlap with an existing trip",
+      });
+    };
 
     const totalDays = Math.ceil(
       (new Date(endDate) - new Date(startDate)) / 86400000,
