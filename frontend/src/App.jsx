@@ -8,6 +8,7 @@ import MyTrip from "./Components/CreateTrip/MyTrip";
 import ProfilePage from "./Components/Profile/ProfilePage";
 import TripDashboard from "./Components/Trip/TripDashboard";
 import InviteConfirmPage from "./Components/Invite/InvitePage";
+import ItineraryPage from "./Components/Itinerary/ItineraryPage";
 function App() {
   return (
     <>
@@ -39,6 +40,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/trip/:tripId/itinerary"
+            element={
+              <ProtectedRoute>
+                <ItineraryPage />
               </ProtectedRoute>
             }
           />

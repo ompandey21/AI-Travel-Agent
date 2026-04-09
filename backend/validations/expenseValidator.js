@@ -25,6 +25,7 @@ const addExpenseSchema = joi.object({
             'any.required': 'Split type is required',
             'any.only': `Split type must be one of ${Object.values(splitType).join(', ')}`
         }),
+    participants: joi.array(),
     splits: joi.array()
         .items(joi.object({
             userId: joi.number()
@@ -43,6 +44,7 @@ const addExpenseSchema = joi.object({
 });
 
 const settleExpenseSchema = joi.object({
+    receiverId: joi.number().required(),
     amount: joi.number()
         .positive()
         .required()

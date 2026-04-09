@@ -22,3 +22,8 @@ export async function forgetPassword(payload){
 export async function createPassword(payload){
   return axios.post(`${API_BASE}/api/auth/createpassword`, payload, { withCredentials: true })
 }
+export async function getMe() {
+  const res =  await axios.get(`${API_BASE}/api/auth/me`, { withCredentials: true });
+  // console.log(res.data);
+  return res.data;
+}
