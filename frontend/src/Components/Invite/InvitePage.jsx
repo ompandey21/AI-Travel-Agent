@@ -113,7 +113,7 @@ export default function InviteConfirmPage() {
   const handleAccept = async () => {
     if (userExists) {
         acceptRequest(token)
-        .then(navigate("/auth"))
+        .then(navigate("/profile"))
         .catch((e) => console.log(e));
     } else {
       navigate(`/auth?token=${token}`);

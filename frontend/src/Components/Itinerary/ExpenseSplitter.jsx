@@ -22,6 +22,15 @@ function Skeleton({ className }) {
   return <div className={`animate-pulse bg-white/[0.07] rounded-lg ${className}`} />;
 }
 
+function Avatar({ name, size = "md" }) {
+  const sz = size === "sm" ? "w-7 h-7 text-xs" : "w-9 h-9 text-sm";
+  return (
+    <div className={`${sz} rounded-full bg-teal-400/15 border border-teal-400/30
+                    flex items-center justify-center text-teal-400 font-bold shrink-0`}>
+      {(name || "?")[0].toUpperCase()}
+    </div>
+  );
+}
 
 export default function ExpenseSplitter() {
   const [expenses,          setExpenses]          = useState([]);
