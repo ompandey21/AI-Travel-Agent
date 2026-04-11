@@ -1,3 +1,4 @@
+const http = require('http');
 const express = require("express");
 const app = express();
 const cors = require("cors");
@@ -12,8 +13,10 @@ const readItineraryRoutes = require("./userRole/routes/readItineraryRoute");
 const hiddenGemRoutes = require('./userRole/routes/hiddenGemRoute');
 const documentRoutes = require('./userRole/routes/documentRoute');
 const expenseSplitterRoutes = require('./userRole/routes/expenseSplitterRoute');
+const chatRoutes = require('./userRole/routes/chatRoute');
 
-const { sequelize, connectDB, UserAuth, TripData, TripMember, ItineraryData, DayData, SlotData, HiddenGemData, DocumentVault, ExpenseData, ExpenseMember, UserExpense, ExpenseSettlement} = require("./config/db");
+const initializeSocketServer = require('./config/socketServer');
+const { sequelize, connectDB, UserAuth, TripData, TripMember, ItineraryData, DayData, SlotData, HiddenGemData, DocumentVault, ExpenseData, ExpenseMember, UserExpense, ExpenseSettlement, ChatMessage } = require("./config/db");
 connectDB();
 
 sequelize.sync({alter: false})
@@ -88,6 +91,14 @@ UserAuth.hasMany(ExpenseSettlement, { foreignKey: 'receiverId', as: 'incomingSet
 ExpenseSettlement.belongsTo(ExpenseData, { foreignKey: 'expenseId', as: 'originExpense', onDelete: 'SET NULL' });
 ExpenseData.hasMany(ExpenseSettlement, { foreignKey: 'expenseId', as: 'relatedSettlements' });
 
+// Chat associations
+ChatMessage.belongsTo(TripData, { foreignKey: 'tripId', as: 'trip', onDelete: 'CASCADE' });
+TripData.hasMany(ChatMessage, { foreignKey: 'tripId', as: 'messages', onDelete: 'CASCADE' });
+ChatMessage.belongsTo(UserAuth, { foreignKey: 'senderId', as: 'sender' });
+ChatMessage.belongsTo(UserAuth, { foreignKey: 'recipientId', as: 'recipient' });
+UserAuth.hasMany(ChatMessage, { foreignKey: 'senderId', as: 'sentMessages' });
+UserAuth.hasMany(ChatMessage, { foreignKey: 'recipientId', as: 'receivedMessages' });
+
 app.use(express.json());
 
 app.use(cookieParser());
@@ -109,8 +120,12 @@ app.use("/api/read-itinerary", readItineraryRoutes);
 app.use("/api/hidden-gem", hiddenGemRoutes);
 app.use("/api/docs", documentRoutes);
 app.use("/api/expense-splitter", expenseSplitterRoutes);
+app.use("/api/chat", chatRoutes);
 
-const port = process.env.PORT;
-app.listen(port, ()=>{
-    console.log("Server connected successfully");
-})
+const server = http.createServer(app);
+initializeSocketServer(server);
+
+const port = process.env.PORT || 8080;
+server.listen(port, () => {
+  console.log(`Server connected successfully on port ${port}`);
+});
