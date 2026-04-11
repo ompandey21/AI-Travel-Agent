@@ -51,6 +51,9 @@ const UserExpense = sequelize.define('user_expense', userExpenseDef, { timestamp
 const ExpenseMember = sequelize.define('expense_member', expenseMemberDef, { timestamps: true, indexes: [{ unique: true, fields: ['expenseId','userId'] }] });
 const ExpenseSettlement = sequelize.define('expense_settlement', expenseSettleMentDef, { timestamps: true });
 
+const chatMessageDef = require('../models/chatMessage');
+const ChatMessage = sequelize.define('chat_message', chatMessageDef, { timestamps: true });
+
 const connectDB = async () => {
   try {
     await sequelize.authenticate();
@@ -61,4 +64,4 @@ const connectDB = async () => {
   }
 };
 
-module.exports = { sequelize, connectDB, UserAuth, TripData, TripMember, ItineraryData, DayData, SlotData, HiddenGemData, HiddenGemVote, DocumentVault, ExpenseData, UserExpense, ExpenseMember, ExpenseSettlement };
+module.exports = { sequelize, connectDB, UserAuth, TripData, TripMember, ItineraryData, DayData, SlotData, HiddenGemData, HiddenGemVote, DocumentVault, ExpenseData, UserExpense, ExpenseMember, ExpenseSettlement, ChatMessage };

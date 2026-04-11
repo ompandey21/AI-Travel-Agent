@@ -58,7 +58,7 @@ export default function AddExpenseModal({ tripId, members, onClose, onSuccess, A
       splitType,
       ...(splitType === "equal"  && { participants: selectedMembers }),
       ...(splitType === "custom" && {
-        splits: customSplits.map((s) => ({ userId: s.userId, amount: parseFloat(s.amount) || 0 })),
+        splits: customSplits.filter((s) => parseFloat(s.amount) > 0).map((s) => ({ userId: s.userId, amount: parseFloat(s.amount) })),
       }),
     };
 
