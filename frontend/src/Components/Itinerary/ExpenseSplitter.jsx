@@ -44,6 +44,7 @@ export default function ExpenseSplitter() {
   const [error,             setError]             = useState(null);
   const [showModal,         setShowModal]         = useState(false);
   const [actionLoading,     setActionLoading]     = useState(null);
+  const [activePanel,       setActivePanel]       = useState("myExpenses");
   const [budget, setBudget] = useState(null);
   const PARAMS = useParams();
   const tripId = PARAMS.tripId;
@@ -119,9 +120,30 @@ export default function ExpenseSplitter() {
   const total     = expenses.reduce((s, e) => s + e.amount, 0);
   const budgetPct = Math.min((total / budget) * 100, 100);
 
+  const myExpenses = expenses.filter((exp) => {
+    const paidById = exp.paidBy?.id ?? exp.paidBy?.userId;
+    return paidById === currentUserId;
+  });
+
+  const mySettlements = recentSettlements.filter((s) => {
+    const payerId = s.payer?.id ?? s.payer?.userId;
+    const receiverId = s.receiver?.id ?? s.receiver?.userId;
+    return payerId === currentUserId || receiverId === currentUserId;
+  });
+
+  const myOutgoingSettlements = mySettlements.filter((s) => {
+    const payerId = s.payer?.id ?? s.payer?.userId;
+    return payerId === currentUserId;
+  });
+
+  const myIncomingSettlements = mySettlements.filter((s) => {
+    const receiverId = s.receiver?.id ?? s.receiver?.userId;
+    return receiverId === currentUserId;
+  });
+
   return (
     <>
-      <div className={`p-8 h-full overflow-y-auto text-white transition-all duration-300 ${showModal ? "blur-sm pointer-events-none" : ""}`}>
+      <div className={`p-8 h-full overflow-hidden text-white transition-all duration-300 ${showModal ? "blur-sm pointer-events-none" : ""}`}>
 
         {/* ── Header ── */}
         <div className="flex items-start justify-between mb-6">
@@ -235,58 +257,319 @@ export default function ExpenseSplitter() {
           }
         </div>
 
-        {/* ── All Expenses ── */}
         <div className="mb-6">
-          <h3 className="text-teal-100/40 text-[10px] font-bold tracking-widest uppercase mb-3">All Expenses</h3>
-          <div className="flex flex-col divide-y divide-white/[0.05]">
-            {loading
-              ? [0, 1, 2].map((i) => <Skeleton key={i} className="h-14 my-1 rounded-xl" />)
-              : expenses.length === 0
-              ? <p className="text-teal-100/35 text-sm py-6 text-center">No expenses yet. Add your first one!</p>
-              : expenses.map((exp, i) => {
-                  const perPerson = exp.participants?.length > 0
-                    ? (exp.amount / exp.participants.length).toFixed(0)
-                    : null;
+          <div className="inline-flex rounded-2xl bg-white/[0.04] border border-white/10 p-1">
+            <button
+              type="button"
+              onClick={() => setActivePanel("allExpenses")}
+              className={`px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ease-out ${activePanel === "allExpenses"
+                ? "bg-teal-400/15 text-teal-100 border border-teal-400/20"
+                : "text-teal-100/60 hover:text-teal-100"
+              }`}
+            >
+              All Expenses
+            </button>
+            <button
+              type="button"
+              onClick={() => setActivePanel("allSettlements")}
+              className={`px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ease-out ${activePanel === "allSettlements"
+                ? "bg-teal-400/15 text-teal-100 border border-teal-400/20"
+                : "text-teal-100/60 hover:text-teal-100"
+              }`}
+            >
+              All Settlements
+            </button>
+            <button
+              type="button"
+              onClick={() => setActivePanel("myExpenses")}
+              className={`px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ease-out ${activePanel === "myExpenses"
+                ? "bg-teal-400/15 text-teal-100 border border-teal-400/20"
+                : "text-teal-100/60 hover:text-teal-100"
+              }`}
+            >
+              My Expenses
+            </button>
+            <button
+              type="button"
+              onClick={() => setActivePanel("mySettlements")}
+              className={`px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ease-out ${activePanel === "mySettlements"
+                ? "bg-teal-400/15 text-teal-100 border border-teal-400/20"
+                : "text-teal-100/60 hover:text-teal-100"
+              }`}
+            >
+              My Settlements
+            </button>
+          </div>
 
-                  return (
-                    <motion.div
-                      key={exp.id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: i * 0.05 }}
-                      className="flex items-center gap-4 py-3"
-                    >
-                      <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0
-                                      bg-teal-400/10 border border-teal-400/30">
-                        <Receipt size={15} className="text-teal-300" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-white text-sm font-medium truncate">{exp.title}</p>
-                        <p className="text-teal-100/40 text-xs mt-0.5">
-                          Paid by{" "}
-                          <span className="text-teal-300/70">
-                            {exp.paidBy?.name || exp.paidBy?.email || "Unknown"}
-                          </span>
-                          {perPerson && ` · ₹${perPerson}/person`}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide
-                                         bg-teal-400/15 text-teal-300">
-                          {exp.splitType}
-                        </span>
-                        <span className="text-white text-sm font-bold w-16 text-right">
-                          ₹{exp.amount.toLocaleString()}
-                        </span>
-                      </div>
-                    </motion.div>
-                  );
-                })
-            }
+          <div className="mt-4 h-[min(62vh,calc(100vh-28rem))] min-h-[320px] rounded-3xl bg-white/[0.04] border border-white/10 overflow-hidden">
+            <div className="h-full overflow-y-auto theme-scrollbar rounded-3xl p-4">
+              <AnimatePresence mode="wait">
+                {activePanel === "allExpenses" ? (
+              <div className="space-y-4">
+                <div className="text-teal-100/40 text-[10px] font-bold tracking-widest uppercase">
+                  All Expenses
+                </div>
+                <div className="space-y-3">
+                  {loading
+                    ? [0, 1, 2].map((i) => <Skeleton key={i} className="h-14 rounded-xl" />)
+                    : expenses.length === 0
+                      ? <p className="text-teal-100/35 text-sm py-6 text-center">No expenses yet. Add your first one!</p>
+                      : expenses.map((exp, i) => {
+                          const perPerson = exp.participants?.length > 0
+                            ? (exp.amount / exp.participants.length).toFixed(0)
+                            : null;
+
+                          return (
+                            <motion.div
+                              key={exp.id}
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              transition={{ delay: i * 0.05 }}
+                              className="flex items-center gap-4 rounded-2xl bg-white/[0.04] border border-white/[0.08] p-4"
+                            >
+                              <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 bg-teal-400/10 border border-teal-400/30">
+                                <Receipt size={16} className="text-teal-300" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-white text-sm font-medium truncate">{exp.title}</p>
+                                <p className="text-teal-100/40 text-xs mt-1">
+                                  Paid by <span className="text-teal-300/70">{exp.paidBy?.name || exp.paidBy?.email || "Unknown"}</span>
+                                  {perPerson && ` · ₹${perPerson}/person`}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide bg-teal-400/15 text-teal-300">
+                                  {exp.splitType}
+                                </span>
+                                <span className="text-white text-sm font-bold w-16 text-right">
+                                  ₹{exp.amount.toLocaleString()}
+                                </span>
+                              </div>
+                            </motion.div>
+                          );
+                        })
+                  }
+                </div>
+              </div>
+            ) : activePanel === "allSettlements" ? (
+              <div className="space-y-4">
+                <div className="text-teal-100/40 text-[10px] font-bold tracking-widest uppercase">
+                  Settlement History
+                </div>
+                {loading
+                  ? [0, 1, 2].map((i) => <Skeleton key={i} className="h-20 rounded-2xl" />)
+                  : recentSettlements.length === 0
+                    ? <p className="text-teal-100/35 text-sm py-6 text-center">No settlement activity yet.</p>
+                    : recentSettlements.map((s, i) => {
+                        const isPending  = s.status === "pending";
+                        const isReceiver = s.receiver?.id === currentUserId;
+                        const isActing   = actionLoading === s.id;
+
+                        return (
+                          <motion.div
+                            key={s.id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.1 + i * 0.05 }}
+                            className="flex items-center gap-4 rounded-2xl bg-teal-400/[0.07] border border-teal-400/25 p-4"
+                          >
+                            <div className="w-11 h-11 rounded-2xl bg-teal-400/15 border border-teal-400/25 flex items-center justify-center shrink-0">
+                              <ArrowRightLeft size={16} className="text-teal-400" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <p className="text-teal-400 text-[10px] font-bold uppercase tracking-wider">Settlement</p>
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide ${isPending ? "bg-amber-400/15 text-amber-300" : "bg-emerald-400/15 text-emerald-300"}`}>
+                                  {s.status}
+                                </span>
+                              </div>
+                              <p className="text-teal-50/85 text-sm">
+                                <span className="font-semibold text-white">{s.payer?.name || s.payer?.id}</span>
+                                {" paid "}
+                                <span className="font-semibold text-white">{s.receiver?.name || s.receiver?.id}</span>
+                                {"  "}
+                                <span className="text-teal-400 font-bold">₹{parseFloat(s.amount).toFixed(0)}</span>
+                              </p>
+                            </div>
+                            {isReceiver && isPending && (
+                              <motion.button
+                                whileHover={{ scale: 1.04 }}
+                                whileTap={{ scale: 0.97 }}
+                                onClick={() => handleConfirm(s.id)}
+                                disabled={isActing}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-400/20 border border-emerald-400/40 text-emerald-300 text-xs font-semibold hover:bg-emerald-400/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                              >
+                                {isActing ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={12} />}
+                                Confirm
+                              </motion.button>
+                            )}
+                          </motion.div>
+                        );
+                      })
+                }
+              </div>
+            ) : activePanel === "myExpenses" ? (
+              <div className="space-y-4">
+                <div className="text-teal-100/40 text-[10px] font-bold tracking-widest uppercase">
+                  My Expenses
+                </div>
+                {loading
+                  ? [0, 1, 2].map((i) => <Skeleton key={i} className="h-14 rounded-xl" />)
+                  : myExpenses.length === 0
+                    ? <p className="text-teal-100/35 text-sm py-6 text-center">You haven't added any expenses yet.</p>
+                    : myExpenses.map((exp, i) => {
+                        const perPerson = exp.participants?.length > 0
+                          ? (exp.amount / exp.participants.length).toFixed(0)
+                          : null;
+
+                        return (
+                          <motion.div
+                            key={`mine-exp-${exp.id}`}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: i * 0.05 }}
+                            className="flex items-center gap-4 rounded-2xl bg-white/[0.04] border border-white/[0.08] p-4"
+                          >
+                            <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 bg-teal-400/10 border border-teal-400/30">
+                              <Receipt size={16} className="text-teal-300" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-white text-sm font-medium truncate">{exp.title}</p>
+                              <p className="text-teal-100/40 text-xs mt-1">
+                                Paid by you
+                                {perPerson && ` · ₹${perPerson}/person`}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide bg-teal-400/15 text-teal-300">
+                                {exp.splitType}
+                              </span>
+                              <span className="text-white text-sm font-bold w-16 text-right">
+                                ₹{exp.amount.toLocaleString()}
+                              </span>
+                            </div>
+                          </motion.div>
+                        );
+                      })
+                }
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <div className="space-y-4">
+                    <div className="text-teal-100/40 text-[10px] font-bold tracking-widest uppercase">
+                      Settlements I Paid
+                    </div>
+                    {loading
+                      ? [0, 1, 2].map((i) => <Skeleton key={`out-set-${i}`} className="h-20 rounded-2xl" />)
+                      : myOutgoingSettlements.length === 0
+                        ? <p className="text-teal-100/35 text-sm py-6 text-center">No outgoing settlements yet.</p>
+                        : myOutgoingSettlements.map((s, i) => {
+                            const receiverId = s.receiver?.id ?? s.receiver?.userId;
+                            const isPending  = s.status === "pending";
+                            const isActing   = actionLoading === s.id;
+
+                            return (
+                              <motion.div
+                                key={`out-set-${s.id}`}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.1 + i * 0.05 }}
+                                className="flex items-center gap-4 rounded-2xl bg-teal-400/[0.07] border border-teal-400/25 p-4"
+                              >
+                                <div className="w-11 h-11 rounded-2xl bg-teal-400/15 border border-teal-400/25 flex items-center justify-center shrink-0">
+                                  <ArrowRightLeft size={16} className="text-teal-400" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <p className="text-teal-400 text-[10px] font-bold uppercase tracking-wider">Settlement</p>
+                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide ${isPending ? "bg-amber-400/15 text-amber-300" : "bg-emerald-400/15 text-emerald-300"}`}>
+                                      {s.status}
+                                    </span>
+                                  </div>
+                                  <p className="text-teal-50/85 text-sm">
+                                    <span className="font-semibold text-white">You paid</span>
+                                    <span className="font-semibold text-white"> {s.receiver?.name || receiverId}</span>
+                                    {"  "}
+                                    <span className="text-teal-400 font-bold">₹{parseFloat(s.amount).toFixed(0)}</span>
+                                  </p>
+                                </div>
+                                {isPending && (
+                                  <span className="text-[10px] font-semibold uppercase tracking-wide px-2 py-1 rounded-full bg-amber-400/15 text-amber-300 shrink-0">
+                                    Awaiting
+                                  </span>
+                                )}
+                              </motion.div>
+                            );
+                          })
+                    }
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="text-teal-100/40 text-[10px] font-bold tracking-widest uppercase">
+                      Settlements Paid To Me
+                    </div>
+                    {loading
+                      ? [0, 1, 2].map((i) => <Skeleton key={`in-set-${i}`} className="h-20 rounded-2xl" />)
+                      : myIncomingSettlements.length === 0
+                        ? <p className="text-teal-100/35 text-sm py-6 text-center">No incoming settlements yet.</p>
+                        : myIncomingSettlements.map((s, i) => {
+                            const payerId     = s.payer?.id ?? s.payer?.userId;
+                            const receiverId  = s.receiver?.id ?? s.receiver?.userId;
+                            const isPending   = s.status === "pending";
+                            const isReceiver  = receiverId === currentUserId;
+                            const isActing    = actionLoading === s.id;
+
+                            return (
+                              <motion.div
+                                key={`in-set-${s.id}`}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.1 + i * 0.05 }}
+                                className="flex items-center gap-4 rounded-2xl bg-teal-400/[0.07] border border-teal-400/25 p-4"
+                              >
+                                <div className="w-11 h-11 rounded-2xl bg-teal-400/15 border border-teal-400/25 flex items-center justify-center shrink-0">
+                                  <ArrowRightLeft size={16} className="text-teal-400" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <p className="text-teal-400 text-[10px] font-bold uppercase tracking-wider">Settlement</p>
+                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide ${isPending ? "bg-amber-400/15 text-amber-300" : "bg-emerald-400/15 text-emerald-300"}`}>
+                                      {s.status}
+                                    </span>
+                                  </div>
+                                  <p className="text-teal-50/85 text-sm">
+                                    <span className="font-semibold text-white">You received from</span>
+                                    <span className="font-semibold text-white"> {s.payer?.name || payerId}</span>
+                                    {"  "}
+                                    <span className="text-teal-400 font-bold">₹{parseFloat(s.amount).toFixed(0)}</span>
+                                  </p>
+                                </div>
+                                {isReceiver && isPending && (
+                                  <motion.button
+                                    whileHover={{ scale: 1.04 }}
+                                    whileTap={{ scale: 0.97 }}
+                                    onClick={() => handleConfirm(s.id)}
+                                    disabled={isActing}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-400/20 border border-emerald-400/40 text-emerald-300 text-xs font-semibold hover:bg-emerald-400/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                                  >
+                                    {isActing ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={12} />}
+                                    Confirm
+                                  </motion.button>
+                                )}
+                              </motion.div>
+                            );
+                          })
+                    }
+                  </div>
+                </div>
+              </div>
+            )}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
 
-        
         {!loading && suggested.length > 0 && (
           <div className="flex flex-col gap-3 mb-6">
             <h3 className="text-teal-100/40 text-[10px] font-bold tracking-widest uppercase">
@@ -307,8 +590,7 @@ export default function ExpenseSplitter() {
                   transition={{ delay: 0.3 + i * 0.08 }}
                   className="flex items-center gap-4 p-4 rounded-2xl bg-white/[0.04] border border-teal-400/15"
                 >
-                  <div className="w-9 h-9 rounded-xl bg-teal-400/10 border border-teal-400/20
-                                  flex items-center justify-center shrink-0">
+                  <div className="w-9 h-9 rounded-xl bg-teal-400/10 border border-teal-400/20 flex items-center justify-center shrink-0">
                     <ArrowRightLeft size={16} className="text-teal-400" />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -329,10 +611,7 @@ export default function ExpenseSplitter() {
                       whileTap={{ scale: 0.97 }}
                       onClick={() => handleSettle(s)}
                       disabled={isActing}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg
-                                 bg-teal-400/20 border border-teal-400/40 text-teal-300
-                                 text-xs font-semibold hover:bg-teal-400/30 transition-all
-                                 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-teal-400/20 border border-teal-400/40 text-teal-300 text-xs font-semibold hover:bg-teal-400/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
                     >
                       {isActing && <Loader2 size={12} className="animate-spin" />}
                       Pay
@@ -343,78 +622,6 @@ export default function ExpenseSplitter() {
             })}
           </div>
         )}
-
-        {/* ── Settlement History ────────────────────────────────────────────────
-             Source: getSettlements → recentSettlements (actual DB records)
-             Shape:  { id, payer:{id,name}, receiver:{id,name}, amount, status, clearedAt }
-             Action: receiver of a pending settlement clicks "Confirm"
-        ── */}
-        {!loading && recentSettlements.length > 0 && (
-          <div className="flex flex-col gap-3">
-            <h3 className="text-teal-100/40 text-[10px] font-bold tracking-widest uppercase">
-              Settlement History
-            </h3>
-            {recentSettlements.map((s, i) => {
-              const isPending  = s.status === "pending";
-              const isReceiver = s.receiver?.id === currentUserId;
-              const isActing   = actionLoading === s.id;
-
-              return (
-                <motion.div
-                  key={s.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 + i * 0.08 }}
-                  className="flex items-center gap-4 p-4 rounded-2xl bg-teal-400/[0.07] border border-teal-400/25"
-                >
-                  <div className="w-9 h-9 rounded-xl bg-teal-400/15 border border-teal-400/25
-                                  flex items-center justify-center shrink-0">
-                    <ArrowRightLeft size={16} className="text-teal-400" />
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <p className="text-teal-400 text-[10px] font-bold uppercase tracking-wider">Settlement</p>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide
-                        ${isPending
-                          ? "bg-amber-400/15 text-amber-300"
-                          : "bg-emerald-400/15 text-emerald-300"}`}>
-                        {s.status}
-                      </span>
-                    </div>
-                    <p className="text-teal-50/85 text-sm">
-                      <span className="font-semibold text-white">{s.payer?.name || s.payer?.id}</span>
-                      {" paid "}
-                      <span className="font-semibold text-white">{s.receiver?.name || s.receiver?.id}</span>
-                      {"  "}
-                      <span className="text-teal-400 font-bold">₹{parseFloat(s.amount).toFixed(0)}</span>
-                    </p>
-                  </div>
-
-                  {/* Confirm: only shown to the receiver of a pending settlement */}
-                  {isReceiver && isPending && (
-                    <motion.button
-                      whileHover={{ scale: 1.04 }}
-                      whileTap={{ scale: 0.97 }}
-                      onClick={() => handleConfirm(s.id)}
-                      disabled={isActing}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg
-                                 bg-emerald-400/20 border border-emerald-400/40 text-emerald-300
-                                 text-xs font-semibold hover:bg-emerald-400/30 transition-all
-                                 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
-                    >
-                      {isActing
-                        ? <Loader2 size={12} className="animate-spin" />
-                        : <CheckCircle2 size={12} />}
-                      Confirm
-                    </motion.button>
-                  )}
-                </motion.div>
-              );
-            })}
-          </div>
-        )}
-
       </div>
 
       {/* ── Add Expense Modal ── */}

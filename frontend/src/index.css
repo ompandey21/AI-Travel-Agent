@@ -1,1 +1,43 @@
 @import "tailwindcss";
+
+.groupchat-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(56,189,248,0.35) rgba(15,23,42,0.12);
+}
+
+.theme-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(56,189,248,0.4) rgba(15,23,42,0.08);
+  scrollbar-gutter: stable;
+}
+
+.theme-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.groupchat-scrollbar::-webkit-scrollbar-track,
+.theme-scrollbar::-webkit-scrollbar-track {
+  background: rgba(15,23,42,0.08);
+  border-radius: 9999px;
+}
+
+.theme-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(56,189,248,0.35);
+  border-radius: 9999px;
+  border: 2px solid rgba(15,23,42,0.08);
+  background-clip: content-box;
+}
+
+.theme-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(56,189,248,0.55);
+}
+
+.groupchat-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(56,189,248,0.35);
+  border-radius: 9999px;
+  border: 2px solid rgba(15,23,42,0.12);
+}
+
+.groupchat-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(56,189,248,0.55);
+}
