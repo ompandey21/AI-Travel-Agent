@@ -58,11 +58,16 @@ export default function TripCreationPage() {
     if (!form.name.trim()) errs.name = "Trip name is required.";
     if (!form.startLocation.trim()) errs.startLocation = "Start location is required.";
     if (!form.destination.trim()) errs.destination = "Destination is required.";
+    if (
+      form.startLocation.trim() &&
+      form.destination.trim() &&
+      form.startLocation.trim().toLowerCase() === form.destination.trim().toLowerCase()
+    ) errs.destination = "Destination must be different from start location.";
     if (!form.startDate) errs.startDate = "Start date is required.";
     else if (form.startDate < today) errs.startDate = "Start date can't be in the past.";
     if (!form.endDate) errs.endDate = "End date is required.";
     else if (form.endDate < today) errs.endDate = "End date can't be in the past.";
-    else if (form.startDate && form.endDate < form.startDate) errs.endDate = "End date must be after start date.";
+    else if (form.startDate && form.endDate <= form.startDate) errs.endDate = "End date must be after start date.";
     if (form.cover && !form.cover.type.startsWith("image/")) errs.cover = "Only image files are allowed.";
     return errs;
   };
@@ -87,7 +92,7 @@ export default function TripCreationPage() {
         withCredentials: true,
         headers: { "Content-Type": "multipart/form-data" },
       });
-      if (res.status === 201) navigate('/myTrip');
+      if (res.status === 201) navigate('/profile');
     } catch (e) {
       console.log(e);
     }
@@ -193,7 +198,6 @@ export default function TripCreationPage() {
                 value={form.destination ? form.destination : destinationInput}
                 onChange={e => {
                   if (form.destination) {
-                    // Clear the confirmed selection so user can search again
                     update("destination")("");
                   }
                   setDestinationInput(e.target.value);

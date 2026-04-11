@@ -4,12 +4,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, Train, UtensilsCrossed, BedDouble, Compass,
   Sparkles, MapPin, Clock, X, Check, Loader2, CalendarX, Image,
+  ChevronLeft, ChevronRight, Trash2,
 } from "lucide-react";
 import {
   getItinerary,
   getDays,
   createItineraryFun,
   createSlotFun,
+  deleteSlotFun,
 } from "./ItineraryAPI";
 import { getTripById } from "../Trip/TripAPI";
 import TripPathCanvas from "./TripPathCanvas";
@@ -58,9 +60,10 @@ const TYPE_CONFIG = {
 function getTypeCfg(type) {
   return TYPE_CONFIG[type?.toLowerCase()] ?? TYPE_CONFIG.default;
 }
+
 // ─── Add Slot Modal ───────────────────────────────────────────────────────────
 
-function AddSlotModal({ dayId, onClose, onSuccess }) {
+function AddSlotModal({ dayId, dayLabel, onClose, onSuccess }) {
   const [form, setForm] = useState({
     activity: "",
     startTime: "",
@@ -97,20 +100,29 @@ function AddSlotModal({ dayId, onClose, onSuccess }) {
 
   return (
     <motion.div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm"
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       onClick={onClose}
     >
       <motion.div
-        className="relative w-full max-w-md mx-4 rounded-2xl bg-[#0b1929] border border-teal-400/20 p-6 shadow-2xl"
-        initial={{ scale: 0.93, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.93, y: 20 }}
+        className="relative w-full max-w-md mx-0 sm:mx-4 rounded-t-2xl sm:rounded-2xl bg-[#0b1929] border border-teal-400/20 p-5 sm:p-6 shadow-2xl"
+        initial={{ y: "100%", opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: "100%", opacity: 0 }}
+        transition={{ type: "spring", damping: 30, stiffness: 300 }}
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Drag handle (mobile) */}
+        <div className="w-10 h-1 rounded-full bg-teal-400/20 mx-auto mb-4 sm:hidden" />
+
         <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors cursor-pointer">
           <X size={18} />
         </button>
 
-        <h3 className="text-white font-bold text-lg mb-1">Add New Slot</h3>
+        <h3 className="text-white font-bold text-lg mb-0.5">Add New Slot</h3>
+        {dayLabel && (
+          <p className="text-teal-400 text-xs font-semibold mb-1">{dayLabel}</p>
+        )}
         <p className="text-teal-100/40 text-xs mb-5">Schedule an activity block for this day</p>
 
         <div className="space-y-3">
@@ -184,6 +196,62 @@ function AddSlotModal({ dayId, onClose, onSuccess }) {
   );
 }
 
+// ─── Delete Confirm Modal ─────────────────────────────────────────────────────
+
+function DeleteConfirmModal({ slot, onClose, onConfirm, loading }) {
+  return (
+    <motion.div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm"
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      onClick={onClose}
+    >
+      <motion.div
+        className="relative w-full max-w-sm mx-0 sm:mx-4 rounded-t-2xl sm:rounded-2xl bg-[#0b1929] border border-red-400/20 p-5 sm:p-6 shadow-2xl"
+        initial={{ y: "100%", opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: "100%", opacity: 0 }}
+        transition={{ type: "spring", damping: 30, stiffness: 300 }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="w-10 h-1 rounded-full bg-red-400/20 mx-auto mb-4 sm:hidden" />
+
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-9 h-9 rounded-xl bg-red-400/10 border border-red-400/25 flex items-center justify-center shrink-0">
+            <Trash2 size={16} className="text-red-400" />
+          </div>
+          <div>
+            <h3 className="text-white font-bold text-base leading-tight">Delete Slot?</h3>
+            <p className="text-red-200/40 text-xs">This action cannot be undone</p>
+          </div>
+        </div>
+
+        <p className="text-slate-400 text-sm mb-5 bg-white/[0.03] border border-white/5 rounded-lg px-3 py-2 line-clamp-2">
+          {slot?.activity || slot?.label || "This slot"}
+        </p>
+
+        <div className="flex gap-2">
+          <button
+            onClick={onClose}
+            className="flex-1 py-2.5 rounded-lg bg-white/5 border border-white/10 text-slate-300 text-sm font-semibold cursor-pointer hover:bg-white/10 transition-colors"
+          >
+            Cancel
+          </button>
+          <motion.button
+            whileTap={{ scale: 0.96 }}
+            onClick={onConfirm}
+            disabled={loading}
+            className="flex-1 py-2.5 rounded-lg bg-red-400/20 border border-red-400/40 text-red-400 text-sm font-semibold
+                       flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer hover:bg-red-400/30 transition-colors"
+          >
+            {loading ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+            {loading ? "Deleting…" : "Delete"}
+          </motion.button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 // ─── Create Itinerary Empty State ─────────────────────────────────────────────
 
 function EmptyItinerary({ tripId, onCreated }) {
@@ -231,15 +299,16 @@ function EmptyItinerary({ tripId, onCreated }) {
 
 // ─── Slot Timeline Item ───────────────────────────────────────────────────────
 
-function SlotItem({ slot, isActive, isLast }) {
+function SlotItem({ slot, isActive, isLast, onDelete }) {
   const cfg  = getTypeCfg(slot.type || slot.activityType);
   const Icon = cfg.Icon;
+  const imgUrl = slot.imgUrl || slot.imageUrl || slot.image || null;
 
   return (
-    <div className="flex gap-3">
+    <div className="flex gap-2 sm:gap-3">
       {/* Spine */}
-      <div className="flex flex-col items-center w-20 shrink-0">
-        <span className="text-teal-100/40 text-[10px] font-semibold whitespace-nowrap mb-1.5">
+      <div className="flex flex-col items-center w-14 sm:w-20 shrink-0">
+        <span className="text-teal-100/40 text-[9px] sm:text-[10px] font-semibold whitespace-nowrap mb-1.5">
           {slot.startTime || ""}
         </span>
         <div className="relative flex items-center justify-center">
@@ -261,24 +330,57 @@ function SlotItem({ slot, isActive, isLast }) {
 
       {/* Card */}
       <div
-        className={`flex items-start gap-2 mb-3 flex-1 px-3 py-2.5 rounded-xl border transition-all duration-200
+        className={`flex gap-2 sm:gap-3 mb-3 flex-1 px-3 py-2.5 rounded-xl border transition-all duration-200
           ${cfg.bg} ${cfg.ring} ${isActive ? `shadow-lg ${cfg.glow}` : ""}`}
       >
-        <Icon size={13} className={`${cfg.text} mt-0.5 shrink-0`} strokeWidth={2} />
+        {/* Image or Icon */}
+        <div className="shrink-0 mt-0.5">
+          {imgUrl ? (
+            <img
+              src={imgUrl}
+              alt={slot.activity || "slot"}
+              className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg object-cover border border-white/10"
+              onError={(e) => {
+                // Fallback to icon on broken image
+                e.currentTarget.style.display = "none";
+                e.currentTarget.nextSibling.style.display = "flex";
+              }}
+            />
+          ) : null}
+          <div
+            className={`${imgUrl ? "hidden" : "flex"} w-10 h-10 sm:w-12 sm:h-12 rounded-lg items-center justify-center ${cfg.bg} border ${cfg.ring}`}
+          >
+            <Icon size={16} className={cfg.text} strokeWidth={2} />
+          </div>
+        </div>
+
+        {/* Text content */}
         <div className="flex-1 min-w-0">
-          <p className="text-teal-50/90 text-xs font-medium leading-snug">{slot.activity || slot.label}</p>
+          <p className="text-teal-50/90 text-xs sm:text-sm font-medium leading-snug">{slot.activity || slot.label}</p>
           {slot.endTime && (
             <span className="flex items-center gap-1 text-teal-100/35 text-[10px] mt-0.5">
               <Clock size={8} /> until {slot.endTime}
             </span>
           )}
         </div>
-        {isActive && (
-          <span className="ml-auto shrink-0 text-[9px] font-bold tracking-wider uppercase px-2 py-0.5
-                           rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30">
-            Now
-          </span>
-        )}
+
+        {/* Right side — Now badge + delete */}
+        <div className="flex flex-col items-end justify-between gap-1 shrink-0">
+          {isActive && (
+            <span className="text-[9px] font-bold tracking-wider uppercase px-2 py-0.5
+                             rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30">
+              Now
+            </span>
+          )}
+          <motion.button
+            whileTap={{ scale: 0.88 }}
+            onClick={() => onDelete(slot)}
+            className="p-1 rounded-md text-red-400/50 hover:text-red-400 hover:bg-red-400/10 transition-colors cursor-pointer"
+            title="Delete slot"
+          >
+            <Trash2 size={13} />
+          </motion.button>
+        </div>
       </div>
     </div>
   );
@@ -297,12 +399,28 @@ export default function DailyPlan() {
   const [error, setError]             = useState(null);
   const [showAddSlot, setShowAddSlot] = useState(false);
 
+  // Day navigation: controlled index (initialised to today's day once trip loads)
+  const [viewDayIndex, setViewDayIndex] = useState(null);
+
+  // Delete modal state
+  const [slotToDelete, setSlotToDelete] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
   const currentDayIndex = trip ? computeTripDayIndex(trip.startDate) : 0;
-  const clampedDayIndex = Math.max(0, Math.min(currentDayIndex ?? 0, days.length - 1));
-  const currentDay      = days[clampedDayIndex] ?? null;
+  const clampedTodayIndex = Math.max(0, Math.min(currentDayIndex ?? 0, days.length - 1));
+
+  // The displayed day index: user-controlled, falls back to today's clamped index
+  const displayDayIndex = viewDayIndex !== null
+    ? Math.max(0, Math.min(viewDayIndex, days.length - 1))
+    : clampedTodayIndex;
+
+  const currentDay = days[displayDayIndex] ?? null;
+
+  const isToday = displayDayIndex === clampedTodayIndex;
 
   const now = nowMinutes();
   const activeSlotIndex = (() => {
+    if (!isToday) return null; // only show "active" highlight on today
     const slots = currentDay?.slots ?? [];
     for (let i = 0; i < slots.length; i++) {
       const start = timeToMinutes(slots[i].startTime);
@@ -318,7 +436,6 @@ export default function DailyPlan() {
     setError(null);
     try {
       const tripData = await getTripById(tripId);
-      // console.log(tripData)
       setTrip(tripData);
 
       const itin = await getItinerary(tripId).catch((e) => {
@@ -333,10 +450,8 @@ export default function DailyPlan() {
 
       setItinerary(itin.itinerary);
       setHasItinerary(true);
-      // console.log(itin.itinerary.days); 
-      const dayData =  await getDays(itin.itinerary.id);
+      const dayData = await getDays(itin.itinerary.id);
       setDays(dayData.days);
-      // console.log(days);
     } catch (e) {
       console.error(e);
       setError("Failed to load itinerary data.");
@@ -345,12 +460,40 @@ export default function DailyPlan() {
     }
   }, [tripId]);
 
+  // Initialise viewDayIndex to today once days are available
+  useEffect(() => {
+    if (days.length > 0 && viewDayIndex === null) {
+      setViewDayIndex(clampedTodayIndex);
+    }
+  }, [days, clampedTodayIndex]);
+
   useEffect(() => { fetchAll(); }, [fetchAll]);
-  
 
   const handleCreateAISlots = () => {
     console.log("🤖 Create slots with AI — coming soon!", { tripId, itineraryId: itinerary?.id });
   };
+
+  const handleDeleteSlot = async () => {
+    if (!slotToDelete) return;
+    setDeleteLoading(true);
+    try {
+      await deleteSlotFun(slotToDelete.id || slotToDelete._id);
+      setSlotToDelete(null);
+      fetchAll();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const goToPrevDay = () => setViewDayIndex((i) => Math.max(0, (i ?? displayDayIndex) - 1));
+  const goToNextDay = () => setViewDayIndex((i) => Math.min(days.length - 1, (i ?? displayDayIndex) + 1));
+  const goToToday   = () => setViewDayIndex(clampedTodayIndex);
+
+  const dayLabel = currentDay
+    ? `Day ${displayDayIndex + 1}${currentDay.title ? ` — ${currentDay.title}` : ""}`
+    : null;
 
   if (loading) return (
     <div className="flex items-center justify-center h-full text-teal-400">
@@ -365,15 +508,15 @@ export default function DailyPlan() {
   );
 
   return (
-    <div className="p-6 md:p-8 h-full overflow-y-auto text-white">
+    <div className="p-4 sm:p-6 md:p-8 h-full overflow-y-auto text-white">
 
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
           <span className="text-teal-400 text-[10px] font-bold tracking-[0.12em] uppercase block mb-1.5">Daily Plan</span>
-          <h2 className="text-2xl font-bold text-white mb-1">Trip Itinerary</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-white mb-1">Trip Itinerary</h2>
           {trip && (
-            <p className="text-teal-100/50 text-sm">
+            <p className="text-teal-100/50 text-xs sm:text-sm">
               {trip.source && trip.destination ? `${trip.source} → ${trip.destination} · ` : ""}
               {trip.totalDays ?? days.length} Days
               {trip.budget ? ` · ₹${Number(trip.budget).toLocaleString("en-IN")}` : ""}
@@ -393,9 +536,9 @@ export default function DailyPlan() {
             <span className="text-teal-100/40 text-[10px] uppercase tracking-widest font-bold mb-3 block">
               Journey Path
             </span>
-            <TripPathCanvas days={days} currentDayIndex={clampedDayIndex} />
+            <TripPathCanvas days={days} currentDayIndex={displayDayIndex} />
             {/* Legend */}
-            <div className="flex items-center gap-5 mt-3">
+            <div className="flex items-center gap-4 sm:gap-5 mt-3 flex-wrap">
               {[
                 { color: "bg-teal-400",  label: "Completed" },
                 { color: "bg-amber-400", label: "Today"     },
@@ -418,42 +561,80 @@ export default function DailyPlan() {
             </div>
           </div>
 
-          {/* Today's Plan */}
-          <div className="rounded-2xl bg-white/[0.04] border border-teal-400/12 p-5 mb-5">
-            <div className="flex items-center justify-between flex-wrap gap-3 mb-5">
-              <div>
-                <span className="text-teal-400 text-[10px] font-bold tracking-widest uppercase block mb-0.5">
-                  Today's Plan
-                </span>
-                {currentDay && (
-                  <h3 className="text-white font-semibold text-base">
-                    Day {clampedDayIndex + 1}
-                    {currentDay.title ? ` — ${currentDay.title}` : ""}
-                    {currentDay.date && (
-                      <span className="ml-2 text-teal-200/40 text-sm font-normal">
-                        {formatDateShort(currentDay.date)}
-                      </span>
+          {/* Day Plan Panel */}
+          <div className="rounded-2xl bg-white/[0.04] border border-teal-400/12 p-4 sm:p-5 mb-5">
+
+            {/* Day header row */}
+            <div className="flex items-center justify-between gap-2 mb-4 flex-wrap">
+
+              {/* Left: Day nav */}
+              <div className="flex items-center gap-2 min-w-0">
+                <motion.button
+                  whileTap={{ scale: 0.88 }}
+                  onClick={goToPrevDay}
+                  disabled={displayDayIndex === 0}
+                  className="w-8 h-8 rounded-lg bg-white/5 border border-teal-400/20 flex items-center justify-center
+                             text-teal-300 disabled:opacity-30 cursor-pointer hover:bg-teal-400/10 transition-colors shrink-0"
+                >
+                  <ChevronLeft size={16} />
+                </motion.button>
+
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-teal-400 text-[10px] font-bold tracking-widest uppercase">
+                      {isToday ? "Today's Plan" : "Day Plan"}
+                    </span>
+                    {!isToday && (
+                      <button
+                        onClick={goToToday}
+                        className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-400/15 border border-amber-400/30 text-amber-300 font-semibold cursor-pointer hover:bg-amber-400/25 transition-colors"
+                      >
+                        Go to Today
+                      </button>
                     )}
-                  </h3>
-                )}
+                  </div>
+                  {currentDay && (
+                    <h3 className="text-white font-semibold text-sm sm:text-base leading-tight truncate">
+                      Day {displayDayIndex + 1}
+                      {currentDay.title ? ` — ${currentDay.title}` : ""}
+                      {currentDay.date && (
+                        <span className="ml-2 text-teal-200/40 text-sm font-normal">
+                          {formatDateShort(currentDay.date)}
+                        </span>
+                      )}
+                    </h3>
+                  )}
+                </div>
+
+                <motion.button
+                  whileTap={{ scale: 0.88 }}
+                  onClick={goToNextDay}
+                  disabled={displayDayIndex === days.length - 1}
+                  className="w-8 h-8 rounded-lg bg-white/5 border border-teal-400/20 flex items-center justify-center
+                             text-teal-300 disabled:opacity-30 cursor-pointer hover:bg-teal-400/10 transition-colors shrink-0"
+                >
+                  <ChevronRight size={16} />
+                </motion.button>
               </div>
 
-              <div className="flex items-center gap-2">
+              {/* Right: action buttons */}
+              <div className="flex items-center gap-2 shrink-0">
                 {/* Add Slot */}
                 <motion.button
                   whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
                   onClick={() => setShowAddSlot(true)}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-teal-400/10 border border-teal-400/30
+                  className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-2 rounded-lg bg-teal-400/10 border border-teal-400/30
                              text-teal-400 text-xs font-semibold cursor-pointer"
                 >
-                  <Plus size={13} /> Add Slot
+                  <Plus size={13} />
+                  <span className="hidden xs:inline sm:inline">Add Slot</span>
                 </motion.button>
 
                 {/* AI Slots */}
                 <motion.button
                   whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.94 }}
                   onClick={handleCreateAISlots}
-                  className="relative flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold
+                  className="relative flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-2 rounded-lg text-xs font-bold
                              cursor-pointer overflow-hidden select-none"
                   style={{
                     background: "linear-gradient(135deg, rgba(251,191,36,0.15) 0%, rgba(167,139,250,0.15) 50%, rgba(45,212,191,0.15) 100%)",
@@ -473,42 +654,93 @@ export default function DailyPlan() {
                   >
                     <Sparkles size={13} />
                   </motion.span>
-                  AI Slots
+                  <span className="hidden xs:inline sm:inline">AI Slots</span>
                 </motion.button>
               </div>
             </div>
 
-            {/* Timeline */}
-            {currentDay?.slots?.length > 0 ? (
-              <div className="flex flex-col">
-                {currentDay.slots.map((slot, i) => (
-                  <SlotItem
-                    key={slot.id || slot._id || i}
-                    slot={slot}
-                    isActive={i === activeSlotIndex}
-                    isLast={i === currentDay.slots.length - 1}
+            {/* Day indicator dots */}
+            {days.length > 1 && (
+              <div className="flex items-center gap-1 mb-4 flex-wrap">
+                {days.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setViewDayIndex(i)}
+                    className={`transition-all duration-200 rounded-full cursor-pointer
+                      ${i === displayDayIndex
+                        ? "w-5 h-2 bg-teal-400"
+                        : i === clampedTodayIndex
+                          ? "w-2 h-2 bg-amber-400/70"
+                          : "w-2 h-2 bg-white/15 hover:bg-white/30"
+                      }`}
+                    title={`Day ${i + 1}`}
                   />
                 ))}
               </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-10 gap-3">
-                <div className="w-10 h-10 rounded-full bg-teal-400/10 border border-teal-400/20 flex items-center justify-center">
-                  <Clock size={18} className="text-teal-400/40" />
-                </div>
-                <p className="text-teal-100/30 text-sm">No slots added yet for today</p>
-              </div>
             )}
+
+            {/* Timeline */}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={displayDayIndex}
+                initial={{ opacity: 0, x: 12 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -12 }}
+                transition={{ duration: 0.2 }}
+              >
+                {currentDay?.slots?.length > 0 ? (
+                  <div className="flex flex-col">
+                    {currentDay.slots.map((slot, i) => (
+                      <SlotItem
+                        key={slot.id || slot._id || i}
+                        slot={slot}
+                        isActive={i === activeSlotIndex}
+                        isLast={i === currentDay.slots.length - 1}
+                        onDelete={(s) => setSlotToDelete(s)}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-10 gap-3">
+                    <div className="w-10 h-10 rounded-full bg-teal-400/10 border border-teal-400/20 flex items-center justify-center">
+                      <Clock size={18} className="text-teal-400/40" />
+                    </div>
+                    <p className="text-teal-100/30 text-sm">No slots added yet for this day</p>
+                    <motion.button
+                      whileTap={{ scale: 0.96 }}
+                      onClick={() => setShowAddSlot(true)}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-teal-400/10 border border-teal-400/25 text-teal-400 text-xs font-semibold cursor-pointer"
+                    >
+                      <Plus size={12} /> Add First Slot
+                    </motion.button>
+                  </div>
+                )}
+              </motion.div>
+            </AnimatePresence>
           </div>
         </>
       )}
 
-      {/* Add Slot Modal */}
+      {/* Add Slot Modal — uses currentDay (the viewed day) */}
       <AnimatePresence>
         {showAddSlot && currentDay && (
           <AddSlotModal
             dayId={currentDay.id || currentDay._id}
+            dayLabel={dayLabel}
             onClose={() => setShowAddSlot(false)}
             onSuccess={() => { setShowAddSlot(false); fetchAll(); }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirm Modal */}
+      <AnimatePresence>
+        {slotToDelete && (
+          <DeleteConfirmModal
+            slot={slotToDelete}
+            loading={deleteLoading}
+            onClose={() => setSlotToDelete(null)}
+            onConfirm={handleDeleteSlot}
           />
         )}
       </AnimatePresence>

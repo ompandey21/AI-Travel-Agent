@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Plus, ArrowRightLeft, X, Loader2, AlertCircle, CheckCircle2, Receipt,
+  Plus, ArrowRightLeft, X, Loader2, AlertCircle, CheckCircle2, Receipt, Clock,
 } from "lucide-react";
 import {
   getTripExpenses,
@@ -76,6 +76,16 @@ export default function ExpenseSplitter() {
   }, [tripId]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  function Avatar({ name, size = "md" }) {
+  const sz = size === "sm" ? "w-7 h-7 text-xs" : "w-9 h-9 text-sm";
+  return (
+    <div className={`${sz} rounded-full bg-teal-400/15 border border-teal-400/30
+                    flex items-center justify-center text-teal-400 font-bold shrink-0`}>
+      {(name || "?")[0].toUpperCase()}
+    </div>
+  );
+}
 
 
   const handleSettle = async (suggestion) => {
@@ -290,6 +300,11 @@ export default function ExpenseSplitter() {
               const fromName  = balances.find((b) => b.userId === s.from)?.name || `User ${s.from}`;
               const toName    = balances.find((b) => b.userId === s.to)?.name   || `User ${s.to}`;
 
+              // Check if the payer already initiated this settlement and it's awaiting confirmation
+              const hasPendingSettlement = recentSettlements.some(
+                (r) => r.payer?.id === s.from && r.receiver?.id === s.to && r.status === "pending"
+              );
+
               return (
                 <motion.div
                   key={i}
@@ -315,19 +330,28 @@ export default function ExpenseSplitter() {
                     </p>
                   </div>
                   {isMyDebt && (
-                    <motion.button
-                      whileHover={{ scale: 1.04 }}
-                      whileTap={{ scale: 0.97 }}
-                      onClick={() => handleSettle(s)}
-                      disabled={isActing}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg
-                                 bg-teal-400/20 border border-teal-400/40 text-teal-300
-                                 text-xs font-semibold hover:bg-teal-400/30 transition-all
-                                 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
-                    >
-                      {isActing && <Loader2 size={12} className="animate-spin" />}
-                      Pay
-                    </motion.button>
+                    hasPendingSettlement ? (
+                      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg
+                                      bg-amber-400/10 border border-amber-400/30 text-amber-300
+                                      text-xs font-semibold shrink-0">
+                        <Clock size={12} />
+                        Pending
+                      </div>
+                    ) : (
+                      <motion.button
+                        whileHover={{ scale: 1.04 }}
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() => handleSettle(s)}
+                        disabled={isActing}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg
+                                   bg-teal-400/20 border border-teal-400/40 text-teal-300
+                                   text-xs font-semibold hover:bg-teal-400/30 transition-all
+                                   disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                      >
+                        {isActing && <Loader2 size={12} className="animate-spin" />}
+                        Pay
+                      </motion.button>
+                    )
                   )}
                 </motion.div>
               );
@@ -416,6 +440,7 @@ export default function ExpenseSplitter() {
             members={members}
             onClose={() => setShowModal(false)}
             onSuccess={fetchAll}
+            Avatar={Avatar}
           />
         )}
       </AnimatePresence>
