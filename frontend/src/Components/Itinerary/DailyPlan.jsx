@@ -536,7 +536,7 @@ export default function DailyPlan() {
             <span className="text-teal-100/40 text-[10px] uppercase tracking-widest font-bold mb-3 block">
               Journey Path
             </span>
-            <TripPathCanvas days={days} currentDayIndex={displayDayIndex} />
+            <TripPathCanvas days={days} currentDayIndex={clampedTodayIndex} />
             {/* Legend */}
             <div className="flex items-center gap-4 sm:gap-5 mt-3 flex-wrap">
               {[
