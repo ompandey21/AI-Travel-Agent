@@ -12,6 +12,7 @@ import {
   createItineraryFun,
   createSlotFun,
   deleteSlotFun,
+  createPlanAI,
 } from "./ItineraryAPI";
 import { getTripById } from "../Trip/TripAPI";
 import TripPathCanvas from "./TripPathCanvas";
@@ -191,6 +192,272 @@ function AddSlotModal({ dayId, dayLabel, onClose, onSuccess }) {
             {loading ? "Creating…" : "Add Slot"}
           </motion.button>
         </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+// ─── AI Planner Modal ────────────────────────────────────────────────────────
+
+const tourismValues = [
+  "attraction", "museum", "gallery", "artwork", "zoo", "theme_park",
+  "aquarium", "viewpoint", "hotel", "hostel", "guest_house", "motel",
+  "resort", "apartment", "camp_site", "caravan_site", "chalet",
+  "alpine_hut", "wilderness_hut", "information", "picnic_site", "trailhead", "not_sure",
+];
+
+const ACTIVITY_LABELS = {
+  attraction: "Attraction",
+  museum: "Museum",
+  gallery: "Gallery",
+  artwork: "Artwork",
+  zoo: "Zoo",
+  theme_park: "Theme Park",
+  aquarium: "Aquarium",
+  viewpoint: "Viewpoint",
+  hotel: "Hotel",
+  hostel: "Hostel",
+  guest_house: "Guest House",
+  motel: "Motel",
+  resort: "Resort",
+  apartment: "Apartment",
+  camp_site: "Camp Site",
+  caravan_site: "Caravan Site",
+  chalet: "Chalet",
+  alpine_hut: "Alpine Hut",
+  wilderness_hut: "Wilderness Hut",
+  information: "Information",
+  picnic_site: "Picnic Site",
+  trailhead: "Trailhead",
+  not_sure: "Not Sure",
+};
+
+// Floating star particle for the magic animation
+function MagicStar({ style }) {
+  return (
+    <motion.div
+      className="absolute rounded-full pointer-events-none"
+      style={{ ...style, background: "radial-gradient(circle, #fde68a, #a78bfa)" }}
+      initial={{ scale: 0, opacity: 1 }}
+      animate={{ scale: [0, 1.5, 0], opacity: [1, 0.8, 0], y: [0, -60 - Math.random() * 40], x: [(Math.random() - 0.5) * 60] }}
+      transition={{ duration: 1.2 + Math.random() * 0.6, ease: "easeOut" }}
+    />
+  );
+}
+
+function AIPlannerModal({ dayId, dayLabel, onClose, onSuccess }) {
+  const [city, setCity] = useState("");
+  const [activity, setActivity] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [magic, setMagic] = useState(false);
+  const [stars, setStars] = useState([]);
+  const [error, setError] = useState(null);
+
+  const spawnStars = () => {
+    setStars(
+      Array.from({ length: 18 }, (_, i) => ({
+        id: i,
+        width: 4 + Math.random() * 6,
+        left: `${10 + Math.random() * 80}%`,
+        top: `${30 + Math.random() * 40}%`,
+      }))
+    );
+  };
+
+  const handleSubmit = async () => {
+    if (!city.trim()) return setError("City is required.");
+    if (!activity) return setError("Please choose an activity type.");
+    setLoading(true);
+    setError(null);
+    setMagic(true);
+    spawnStars();
+    try {
+      const apiActivity = activity === "not_sure" ? "yes" : activity;
+      await createPlanAI(dayId, { city: city.trim(), activity: apiActivity });
+      // Brief pause so the animation is visible
+      await new Promise((r) => setTimeout(r, 1800));
+      onSuccess();
+    } catch (e) {
+      setMagic(false);
+      setStars([]);
+      setError(e?.response?.data?.message || "AI planning failed. Try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <motion.div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm"
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      onClick={!loading ? onClose : undefined}
+    >
+      <motion.div
+        className="relative w-full max-w-md mx-0 sm:mx-4 rounded-t-2xl sm:rounded-2xl bg-[#0b1929] border border-amber-400/30 p-5 sm:p-6 shadow-2xl overflow-hidden"
+        initial={{ y: "100%", opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: "100%", opacity: 0 }}
+        transition={{ type: "spring", damping: 30, stiffness: 300 }}
+        onClick={(e) => e.stopPropagation()}
+        style={{ boxShadow: magic ? "0 0 60px rgba(167,139,250,0.25), 0 0 30px rgba(251,191,36,0.15)" : undefined }}
+      >
+        {/* Ambient glow bg when magic */}
+        <AnimatePresence>
+          {magic && (
+            <motion.div
+              className="absolute inset-0 pointer-events-none"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{
+                background: "radial-gradient(ellipse at 50% 60%, rgba(167,139,250,0.18) 0%, rgba(251,191,36,0.10) 40%, transparent 70%)",
+              }}
+            />
+          )}
+        </AnimatePresence>
+
+        {/* Star particles */}
+        <AnimatePresence>
+          {stars.map((s) => (
+            <MagicStar key={s.id} style={{ width: s.width, height: s.width, left: s.left, top: s.top }} />
+          ))}
+        </AnimatePresence>
+
+        {/* Drag handle */}
+        <div className="w-10 h-1 rounded-full bg-amber-400/20 mx-auto mb-4 sm:hidden" />
+
+        {!loading && (
+          <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors cursor-pointer z-10">
+            <X size={18} />
+          </button>
+        )}
+
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: "linear-gradient(135deg, rgba(251,191,36,0.2), rgba(167,139,250,0.2))", border: "1px solid rgba(251,191,36,0.35)" }}>
+            <motion.span
+              animate={magic ? { rotate: [0, 360], scale: [1, 1.4, 1] } : { rotate: [0, 18, -18, 0], scale: [1, 1.2, 1] }}
+              transition={{ duration: magic ? 1.5 : 2.5, repeat: Infinity, ease: "easeInOut" }}
+            >
+              <Sparkles size={16} className="text-amber-300" />
+            </motion.span>
+          </div>
+          <div>
+            <h3 className="text-white font-bold text-lg leading-tight">AI Planner</h3>
+            {dayLabel && <p className="text-amber-400/70 text-xs font-semibold">{dayLabel}</p>}
+          </div>
+        </div>
+
+        <p className="text-teal-100/40 text-xs mb-5">Let AI auto-generate activity slots for your day ✨</p>
+
+        <AnimatePresence mode="wait">
+          {magic ? (
+            <motion.div
+              key="magic"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex flex-col items-center justify-center py-8 gap-4"
+            >
+              <motion.div
+                className="w-16 h-16 rounded-2xl flex items-center justify-center relative"
+                style={{ background: "linear-gradient(135deg, rgba(251,191,36,0.2), rgba(167,139,250,0.25))", border: "1px solid rgba(251,191,36,0.4)" }}
+                animate={{ scale: [1, 1.08, 1], rotate: [0, 5, -5, 0] }}
+                transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
+              >
+                <Sparkles size={28} className="text-amber-300" />
+                {/* Orbiting dot */}
+                <motion.div
+                  className="absolute w-2 h-2 rounded-full bg-violet-400"
+                  style={{ top: 4, right: 4 }}
+                  animate={{ scale: [1, 1.6, 1], opacity: [1, 0.5, 1] }}
+                  transition={{ duration: 0.9, repeat: Infinity }}
+                />
+              </motion.div>
+              <div className="text-center">
+                <motion.p
+                  className="text-amber-200 font-semibold text-sm"
+                  animate={{ opacity: [0.7, 1, 0.7] }}
+                  transition={{ duration: 1.2, repeat: Infinity }}
+                >
+                  Crafting your perfect day…
+                </motion.p>
+                <p className="text-teal-100/30 text-xs mt-1">AI is creating slots for {city}</p>
+              </div>
+              {/* Animated shimmer bar */}
+              <div className="w-48 h-1.5 rounded-full bg-white/10 overflow-hidden">
+                <motion.div
+                  className="h-full rounded-full"
+                  style={{ background: "linear-gradient(90deg, #fbbf24, #a78bfa, #2dd4bf)" }}
+                  animate={{ x: ["-100%", "200%"] }}
+                  transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+                />
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div key="form" className="space-y-4">
+              {/* City */}
+              <div>
+                <label className="text-teal-100/40 text-[10px] uppercase tracking-wider mb-1 block">City *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Jaipur, Paris, Kyoto…"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  className="w-full bg-white/5 border border-amber-400/20 rounded-lg px-3 py-2 text-sm text-white
+                             placeholder-slate-500 focus:outline-none focus:border-amber-400/50 transition-colors"
+                />
+              </div>
+
+              {/* Activity type */}
+              <div>
+                <label className="text-teal-100/40 text-[10px] uppercase tracking-wider mb-2 block">Activity Type *</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {tourismValues.map((val) => (
+                    <button
+                      key={val}
+                      onClick={() => setActivity(val)}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-all duration-150 cursor-pointer capitalize
+                        ${activity === val
+                          ? "bg-amber-400/25 border-amber-400/60 text-amber-300"
+                          : "bg-white/5 border-white/10 text-slate-400 hover:border-amber-400/30 hover:text-amber-200"
+                        }`}
+                    >
+                      {ACTIVITY_LABELS[val] ?? val.replace(/_/g, " ")}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {error && (
+                <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="text-red-400 text-xs">
+                  {error}
+                </motion.p>
+              )}
+
+              <motion.button
+                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+                onClick={handleSubmit}
+                disabled={loading}
+                className="w-full py-2.5 rounded-lg text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer relative overflow-hidden"
+                style={{
+                  background: "linear-gradient(135deg, rgba(251,191,36,0.2), rgba(167,139,250,0.2))",
+                  border: "1px solid rgba(251,191,36,0.45)",
+                  color: "#fde68a",
+                }}
+              >
+                <motion.span
+                  className="absolute inset-0 pointer-events-none"
+                  style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)" }}
+                  animate={{ x: ["-100%", "200%"] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                />
+                <Sparkles size={15} />
+                Generate AI Slots
+              </motion.button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
     </motion.div>
   );
@@ -398,6 +665,7 @@ export default function DailyPlan() {
   const [loading, setLoading]         = useState(true);
   const [error, setError]             = useState(null);
   const [showAddSlot, setShowAddSlot] = useState(false);
+  const [showAIPlanner, setShowAIPlanner] = useState(false);
 
   // Day navigation: controlled index (initialised to today's day once trip loads)
   const [viewDayIndex, setViewDayIndex] = useState(null);
@@ -470,7 +738,7 @@ export default function DailyPlan() {
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
   const handleCreateAISlots = () => {
-    console.log("🤖 Create slots with AI — coming soon!", { tripId, itineraryId: itinerary?.id });
+    setShowAIPlanner(true);
   };
 
   const handleDeleteSlot = async () => {
@@ -654,7 +922,7 @@ export default function DailyPlan() {
                   >
                     <Sparkles size={13} />
                   </motion.span>
-                  <span className="hidden xs:inline sm:inline">AI Slots</span>
+                  <span className="hidden xs:inline sm:inline">AI Planner</span>
                 </motion.button>
               </div>
             </div>
@@ -729,6 +997,18 @@ export default function DailyPlan() {
             dayLabel={dayLabel}
             onClose={() => setShowAddSlot(false)}
             onSuccess={() => { setShowAddSlot(false); fetchAll(); }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* AI Planner Modal */}
+      <AnimatePresence>
+        {showAIPlanner && currentDay && (
+          <AIPlannerModal
+            dayId={currentDay.id || currentDay._id}
+            dayLabel={dayLabel}
+            onClose={() => setShowAIPlanner(false)}
+            onSuccess={() => { setShowAIPlanner(false); fetchAll(); }}
           />
         )}
       </AnimatePresence>

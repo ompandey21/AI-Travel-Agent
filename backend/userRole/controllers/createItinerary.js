@@ -1,3 +1,4 @@
+const axios = require("axios");
 const { Op } = require("sequelize");
 const { ItineraryData, DayData, SlotData, TripData, TripMember } = require("../../config/db");
 
@@ -67,6 +68,128 @@ exports.createSlot = async(req, res) =>{
         res.status(500).json({ message: "Internal server error" });
     }
 }
+
+exports.createPlanWithAI = async (req, res) => {
+    try {
+        const { dayId } = req.params;
+        const { city, activity } = req.body;
+
+        if (!city || !activity) {
+            return res.status(400).json({ message: "City and activity are required" });
+        }
+
+        const day = await DayData.findByPk(dayId);
+        if (!day) {
+            return res.status(404).json({ message: "Day not found" });
+        }
+
+        const itinerary = await ItineraryData.findByPk(day.itinerary_id);
+
+        if (itinerary.isFinalized) {
+            return res.status(400).json({ message: "Itinerary is finalized, cannot add new slots" });
+        }
+
+        const isAdmin = await TripMember.findOne({
+            where: {
+                userId: req.user.id,
+                tripId: itinerary.trip_id,
+                role: 'admin'
+            }
+        });
+
+        const status = isAdmin ? "approved" : "pending";
+
+        const response = await axios.post(
+            `${process.env.ML_SERVICE_API}/itinerary/create-slots`,
+            { city, activity }
+        );
+
+        const dayPlan = response?.data?.data?.day_plan;
+        // console.log(dayPlan);
+        if (!dayPlan || !Array.isArray(dayPlan)) {
+            return res.status(500).json({ message: "Invalid response from ML service" });
+        }
+
+        const parseTime = (timeStr) => {
+            try {
+                const [time, modifier] = timeStr.split(" ");
+                let [hours, minutes] = time.split(":").map(Number);
+
+                if (modifier === "PM" && hours !== 12) hours += 12;
+                if (modifier === "AM" && hours === 12) hours = 0;
+
+                const date = new Date();
+                date.setHours(hours, minutes, 0, 0);
+                return date;
+            } catch {
+                return null;
+            }
+        };
+
+        const parseDuration = (durationStr) => {
+            const num = parseFloat(durationStr);
+            if (isNaN(num)) return null;
+            return num * 60;
+        };
+
+        const createdSlots = [];
+
+        for (const item of dayPlan) {
+            try {
+                const start = parseTime(item.time);
+                const duration = parseDuration(item.duration);
+
+                if (!start || !duration) continue;
+
+                const end = new Date(start.getTime() + duration * 60000);
+
+                const startTime = start.toTimeString().slice(0, 5);
+                const endTime = end.toTimeString().slice(0, 5);
+
+                const conflict = await SlotData.findOne({
+                    where: {
+                        day_id: dayId,
+                        [Op.or]: [
+                            {
+                                startTime: { [Op.lte]: startTime },
+                                endTime: { [Op.gte]: startTime }
+                            },
+                            {
+                                startTime: { [Op.lte]: endTime },
+                                endTime: { [Op.gte]: endTime }
+                            }
+                        ]
+                    }
+                });
+
+                if (conflict) continue;
+
+                const slot = await SlotData.create({
+                    day_id: dayId,
+                    startTime,
+                    endTime,
+                    activity: `${item.activity} at ${item.place}`,
+                    status,
+                    imgUrl: null
+                });
+
+                createdSlots.push(slot);
+
+            } catch {
+                continue;
+            }
+        }
+
+        return res.status(201).json({
+            message: "AI plan created successfully",
+            createdCount: createdSlots.length
+        });
+
+    } catch (e) {
+        console.error("Create plan with AI error", e);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
 // only admin can finalize
 exports.finalizeItinerary = async (req, res) => {
     try{

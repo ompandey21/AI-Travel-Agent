@@ -67,3 +67,10 @@ export const deleteSlotFun = async (slotId) => {
     // console.log(res);
     return res.data;  
 }
+
+export const createPlanAI = async (dayId, payload) => {
+    const res = await axios.post(`${API}/itinerary/create-slot-ai/${dayId}`,
+        payload,
+        { withCredentials : true });
+    return res.data;
+}
