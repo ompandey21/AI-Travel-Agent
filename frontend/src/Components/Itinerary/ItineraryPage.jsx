@@ -10,7 +10,6 @@ import {
   ChevronLeft,
   Loader2,
 } from "lucide-react";
-import travelVideo from "../../media/profile_bg.mp4";
 import DailyPlan from "./DailyPlan"; // Eagerly loaded — shown on first render
 import { getTripById } from "../Trip/TripAPI";
 import { useNavigate, useParams } from "react-router-dom";
@@ -81,7 +80,7 @@ export default function ItineraryPage() {
           objectFit: "cover", zIndex: 0,
         }}
       >
-        <source src={travelVideo} type="video/mp4" />
+        <source src={import.meta.env.VITE_PROFILE_BG} type="video/mp4" />
       </video>
       <div className="fixed inset-0 z-0 bg-gradient-to-br from-[#081c28]/95 via-[#0a2632]/92 to-[#05141e]/97" />
 
