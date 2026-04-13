@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Upload, FileText, Image, FileSpreadsheet, File, Download, Trash2, CloudUpload, Loader2, AlertCircle, X } from "lucide-react";
+import { Upload, FileText, Image, FileSpreadsheet, File, Download, Eye, Trash2, CloudUpload, Loader2, AlertCircle, X } from "lucide-react";
 import { getDocuments, uploadDocument, deleteDocument, getDocumentById } from "../Trip/TripAPI";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
@@ -231,12 +231,143 @@ function DeletePopover({ fileName, onConfirm, onCancel, loading }) {
   );
 }
 
+// ─── File Viewer Modal ────────────────────────────────────────────────────────
+
+function FileViewerModal({ file, fileUrl, onClose }) {
+  const fileName = file.name || file.fileName || file.originalName || "file";
+  const type     = inferType(fileName);
+  const displayName = file.title || fileName;
+
+  // Close on backdrop click or Escape
+  useEffect(() => {
+    const handler = (e) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  const renderContent = () => {
+    if (!fileUrl) {
+      return (
+        <div className="flex flex-col items-center justify-center flex-1 gap-3 py-16">
+          <Loader2 size={28} className="animate-spin text-teal-400/60" />
+          <p className="text-teal-100/40 text-sm">Loading file…</p>
+        </div>
+      );
+    }
+
+    if (type === "image") {
+      return (
+        <div className="flex items-center justify-center flex-1 overflow-auto p-4">
+          <img
+            src={fileUrl}
+            alt={displayName}
+            className="max-w-full max-h-full rounded-xl object-contain shadow-2xl"
+          />
+        </div>
+      );
+    }
+
+    if (type === "pdf") {
+      return (
+        <iframe
+          src={fileUrl}
+          title={displayName}
+          className="flex-1 w-full rounded-b-2xl"
+          style={{ border: "none", minHeight: 0 }}
+        />
+      );
+    }
+
+    // For docs / sheets — open in browser or show fallback
+    return (
+      <div className="flex flex-col items-center justify-center flex-1 gap-4 py-16 px-6 text-center">
+        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center border
+                         ${TYPE_CONFIG[type]?.bg} ${TYPE_CONFIG[type]?.border}`}>
+          {(() => { const Icon = TYPE_CONFIG[type]?.Icon || File; return <Icon size={28} className={TYPE_CONFIG[type]?.text} />; })()}
+        </div>
+        <div>
+          <p className="text-white font-semibold text-base mb-1">{displayName}</p>
+          <p className="text-teal-100/40 text-sm mb-4">
+            This file type can't be previewed directly. Open it in a new tab instead.
+          </p>
+        </div>
+        <a
+          href={fileUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-teal-400/15 border border-teal-400/40
+                     text-teal-400 text-sm font-semibold hover:bg-teal-400/25 transition-colors"
+        >
+          <Eye size={14} /> Open in New Tab
+        </a>
+      </div>
+    );
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.18 }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.94, y: 14 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.94, y: 14 }}
+        transition={{ duration: 0.22, ease: "easeOut" }}
+        className="w-full max-w-3xl max-h-[88vh] flex flex-col rounded-2xl bg-[#0d1f1e] border border-teal-400/20 shadow-2xl shadow-black/80 overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-teal-400/10 shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
+            {(() => {
+              const t = inferType(file.name || file.fileName || "");
+              const cfg = TYPE_CONFIG[t] || TYPE_CONFIG.doc;
+              const Icon = cfg.Icon;
+              return (
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${cfg.bg} ${cfg.border}`}>
+                  <Icon size={14} className={cfg.text} />
+                </div>
+              );
+            })()}
+            <div className="min-w-0">
+              <p className="text-white font-semibold text-sm truncate">{displayName}</p>
+              <p className="text-teal-100/35 text-[10px] uppercase tracking-wider">
+                {type === "image" ? "Image" : type === "pdf" ? "PDF Document" : type === "sheet" ? "Spreadsheet" : "Document"}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-teal-400/50
+                       hover:text-teal-400 hover:bg-teal-400/10 transition-colors cursor-pointer shrink-0 ml-3"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex flex-col flex-1 min-h-0">
+          {renderContent()}
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 // ─── File Row ────────────────────────────────────────────────────────────────
 
 function FileRow({ file, index, onDelete }) {
   const [showPopover, setShowPopover] = useState(false);
   const [deleting, setDeleting]       = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [viewing, setViewing]         = useState(false);
+  const [viewUrl, setViewUrl]         = useState(null);
+  const [showViewer, setShowViewer]   = useState(false);
   const rowRef = useRef(null);
 
   const displayName = file.title || file.name || file.fileName || file.originalName || "Unnamed file";
@@ -275,6 +406,21 @@ function FileRow({ file, index, onDelete }) {
       console.error("Download failed:", err);
     } finally {
       setDownloading(false);
+    }
+  };
+
+  const handleView = async () => {
+    if (viewing) return;
+    setShowViewer(true);
+    if (viewUrl) return; // already fetched
+    setViewing(true);
+    try {
+      const doc = await getDocumentById(file.id || file._id);
+      setViewUrl(doc.fileUrl || doc.url || null);
+    } catch (err) {
+      console.error("View failed:", err);
+    } finally {
+      setViewing(false);
     }
   };
 
@@ -330,6 +476,16 @@ function FileRow({ file, index, onDelete }) {
 
         <motion.button
           whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+          onClick={handleView}
+          title="View"
+          className="w-8 h-8 rounded-lg flex items-center justify-center bg-teal-400/10 border border-teal-400/25
+                     text-teal-400/70 hover:text-teal-400 cursor-pointer transition-colors"
+        >
+          <Eye size={13} />
+        </motion.button>
+
+        <motion.button
+          whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
           onClick={() => setShowPopover((v) => !v)}
           title="Delete"
           className="w-8 h-8 rounded-lg flex items-center justify-center bg-red-400/10 border border-red-400/25
@@ -346,6 +502,16 @@ function FileRow({ file, index, onDelete }) {
             onConfirm={handleConfirmDelete}
             onCancel={() => setShowPopover(false)}
             loading={deleting}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showViewer && (
+          <FileViewerModal
+            file={file}
+            fileUrl={viewing ? null : viewUrl}
+            onClose={() => setShowViewer(false)}
           />
         )}
       </AnimatePresence>

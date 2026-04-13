@@ -13,7 +13,7 @@ import {
 import travelVideo from "../../media/profile_bg.mp4";
 import DailyPlan from "./DailyPlan"; // Eagerly loaded — shown on first render
 import { getTripById } from "../Trip/TripAPI";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 // Lazy-loaded tabs — only bundled/fetched when the user navigates to them
 const GroupChat = lazy(() => import("./GroupChat"));
@@ -69,7 +69,7 @@ export default function ItineraryPage() {
 
     return () => { cancelled = true; };
   }, [tripId]);
-
+  const navigate = useNavigate();
   return (
     <div className="relative min-h-screen w-full flex overflow-hidden font-sans">
       {/* Background video */}
@@ -101,7 +101,8 @@ export default function ItineraryPage() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -8 }}
                 transition={{ duration: 0.2 }}
-                className="text-white text-xl font-bold tracking-wide whitespace-nowrap overflow-hidden"
+                className="text-white text-xl font-bold tracking-wide whitespace-nowrap overflow-hidden cursor-pointer"
+                onClick={() => navigate('/')}
               >
                 Iternation
               </motion.span>
