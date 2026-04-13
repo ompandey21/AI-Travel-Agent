@@ -7,7 +7,6 @@ import {
   ChevronLeft, ChevronRight, Plane,
   Clock, Wallet, Globe, CheckCheck, Plus,
 } from "lucide-react";
-import video from "../../media/profile_bg.mp4";
 import TripCard from "./TripCard";
 import Header from "./Header";
 
@@ -147,7 +146,7 @@ export default function ProfilePage() {
         position: "fixed", inset: 0, width: "100%", height: "100%",
         objectFit: "cover", zIndex: 0,
       }}>
-        <source src={video} type="video/mp4" />
+        <source src={import.meta.env.VITE_PROFILE_BG} type="video/mp4" />
       </video>
 
       {/* OVERLAY */}

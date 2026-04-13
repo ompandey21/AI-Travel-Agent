@@ -5,7 +5,6 @@ import {
 } from "lucide-react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import video from '../../media/Traveling.mp4';
 
 
 
@@ -113,7 +112,7 @@ export default function TripCreationPage() {
             muted
             className="w-full h-full object-cover"
           >
-            <source src={video} type="video/mp4" />
+            <source src={import.meta.env.VITE_TRIP_VIDEO} type="video/mp4" />
           </video>
 
           <div className="absolute inset-0 bg-black/30" />

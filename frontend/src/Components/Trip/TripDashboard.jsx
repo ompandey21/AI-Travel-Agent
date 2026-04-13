@@ -10,7 +10,6 @@ import TripMap from "./TripMap";
 import MembersCard from "./MembersCard";
 import Header from "../Profile/Header";
 
-import travelVideo from "../../media/profile_bg.mp4";
 
 const STAGGER = [0, 0.08, 0.16, 0.24, 0.32];
 
@@ -85,7 +84,7 @@ const TripDashboard = () => {
     <div style={styles.root}>
       <Header />
       <video autoPlay loop muted playsInline style={styles.video}>
-        <source src={travelVideo} type="video/mp4" />
+        <source src={import.meta.env.VITE_PROFILE_BG} type="video/mp4" />
       </video>
       <div style={styles.overlay} />
 

@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-// import video from '../../media/team.mp4';
 import axios from "axios";
 import { acceptRequest } from "../Trip/TripAPI";
 
@@ -158,8 +157,8 @@ export default function InviteConfirmPage() {
 
       {/* Video frame */}
       <div className="w-full aspect-video rounded-[18px] overflow-hidden border-[2.5px] border-[#b8ddf7] bg-[#daeef9] mb-5 shadow-[0_4px_24px_rgba(26,127,193,0.12)]">
-        {/* <video
-          src={video}
+        <video
+          src={import.meta.env.VITE_INVITATION_VIDEO}
           autoPlay
           muted
           loop
@@ -167,7 +166,7 @@ export default function InviteConfirmPage() {
           className="w-full h-full object-cover block"
         >
           <source src="/trip-preview.mp4" type="video/mp4" />
-        </video> */}
+        </video>
       </div>
 
       {/* Meta pills */}
