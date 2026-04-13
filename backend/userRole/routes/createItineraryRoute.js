@@ -8,6 +8,7 @@ const {
     rejectSlot,
     updateSlot,
     deleteSlot,
+    createPlanWithAI,
 } = require("../controllers/createItinerary");
 
 const authMiddleware = require('../middlewares/authMiddleware');
@@ -17,6 +18,7 @@ const { createSlotSchema, updateSlotSchema } = require('../../validations/itiner
 
 router.post('/create-itinerary/:tripId', authMiddleware, isTripAdmin, createItinerary);
 router.post('/create-slot/:dayId', authMiddleware, validate(createSlotSchema), createSlot);
+router.post('/create-slot-ai/:dayId', authMiddleware, createPlanWithAI);
 router.post('/finalize-itinerary/:itineraryId', authMiddleware, isTripAdmin, finalizeItinerary);
 router.post('/approve-slot/:slotId', authMiddleware, isTripAdmin, approveSlot);
 router.post('/reject-slot/:slotId', authMiddleware, isTripAdmin, rejectSlot);
