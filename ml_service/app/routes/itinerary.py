@@ -16,7 +16,9 @@ async def create_slots(req: SlotRequest):
         places = get_places(req.city, req.activity)
         matrix = get_distance_matrix(places)
         plan = create_plan(places, matrix)
+        print(plan)
         parsed_plan = extract_json(plan)
+        print(parsed_plan)
         return {
             "status": "success",
             "data": parsed_plan

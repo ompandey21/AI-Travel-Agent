@@ -66,7 +66,7 @@ const TripDashboard = () => {
     gridTemplateColumns: isMobile
       ? "1fr"
       : isTablet
-        ? "1fr 1fr"        // header full-width, countdown + calendar side by side
+        ? "1fr 1fr"        
         : "1.1fr 1fr 1.2fr",
   };
 

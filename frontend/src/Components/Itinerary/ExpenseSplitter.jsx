@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Plus, ArrowRightLeft, X, Loader2, AlertCircle, CheckCircle2, Receipt,
+  Plus, ArrowRightLeft, X, Loader2, AlertCircle, CheckCircle2, Receipt, Clock,
 } from "lucide-react";
 import {
   getTripExpenses,
@@ -86,6 +86,16 @@ export default function ExpenseSplitter() {
   }, [tripId]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  function Avatar({ name, size = "md" }) {
+  const sz = size === "sm" ? "w-7 h-7 text-xs" : "w-9 h-9 text-sm";
+  return (
+    <div className={`${sz} rounded-full bg-teal-400/15 border border-teal-400/30
+                    flex items-center justify-center text-teal-400 font-bold shrink-0`}>
+      {(name || "?")[0].toUpperCase()}
+    </div>
+  );
+}
 
 
   const handleSettle = async (suggestion) => {
@@ -582,6 +592,11 @@ export default function ExpenseSplitter() {
               const fromName  = balances.find((b) => b.userId === s.from)?.name || `User ${s.from}`;
               const toName    = balances.find((b) => b.userId === s.to)?.name   || `User ${s.to}`;
 
+              // Check if the payer already initiated this settlement and it's awaiting confirmation
+              const hasPendingSettlement = recentSettlements.some(
+                (r) => r.payer?.id === s.from && r.receiver?.id === s.to && r.status === "pending"
+              );
+
               return (
                 <motion.div
                   key={i}
@@ -632,6 +647,7 @@ export default function ExpenseSplitter() {
             members={members}
             onClose={() => setShowModal(false)}
             onSuccess={fetchAll}
+            Avatar={Avatar}
           />
         )}
       </AnimatePresence>

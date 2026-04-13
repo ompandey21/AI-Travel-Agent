@@ -39,7 +39,7 @@ const Header = () => {
         alignItems: "center",
         justifyContent: "space-between",
         padding: "18px 56px",
-        fontFamily: "'Satoshi', sans-serif",
+        fontFamily: "'Satoshi', sans-serif",  
       }}
     >
       <style>{`@import url('https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@800,700&f[]=satoshi@400,500,700&display=swap');`}</style>
