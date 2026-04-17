@@ -157,6 +157,10 @@ exports.createpassword = async (req, res) => {
     if (!user) {
       return res.status(400).json({ message: "Invalid OTP." });
     }
+    const isSamePassword = await verifyUser(password, user.password);
+    if (isSamePassword) {
+      return res.status(400).json({ message: "New password cannot be same as old password." });
+    }
     if (!user.otp_expires || new Date() > user.otp_expires) {
       return res
         .status(400)

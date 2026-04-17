@@ -13,11 +13,9 @@ const {
 
 const auth = require("../middlewares/authMiddleware");
 const isTripAdmin = require("../middlewares/isTripAdmin");
-const validate = require("../middlewares/validate");
-const { createTripSchema, inviteSchema } = require("../../validations/tripValidator");
 
 router.post("/create-trip", auth, upload.single('cover_img'), createTrip);
-router.post("/invite-user/:tripId", auth ,validate(inviteSchema) , inviteUser);
+router.post("/invite-user/:tripId", auth  , inviteUser);
 router.get("/verify-invite", verifyInvite);
 router.get("/accept-invite", acceptInvite);
 router.get("/:id/members", auth, getMembers);

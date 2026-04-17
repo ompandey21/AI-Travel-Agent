@@ -57,7 +57,7 @@ export default function ExpenseSplitter() {
       const [expRes, settleRes, memberRes, balanceRes, meRes, tripRes] = await Promise.all([
         getTripExpenses(tripId),
         getSettlements(tripId),
-        getMembers(1),
+        getMembers(tripId),
         getUserBalance(tripId),
         getMe(),
         getTripById(tripId)
@@ -128,7 +128,9 @@ export default function ExpenseSplitter() {
   };
 
   const total     = expenses.reduce((s, e) => s + e.amount, 0);
-  const budgetPct = Math.min((total / budget) * 100, 100);
+  const perHeadBudget = Number(budget) || 0;
+  const totalBudget = perHeadBudget * members.length;
+  const budgetPct = totalBudget ? Math.min((total / totalBudget) * 100, 100) : 0;
 
   const myExpenses = expenses.filter((exp) => {
     const paidById = exp.paidBy?.id ?? exp.paidBy?.userId;
@@ -166,7 +168,7 @@ export default function ExpenseSplitter() {
               <Skeleton className="h-4 w-48 mt-1" />
             ) : (
               <p className="text-teal-100/50 text-sm">
-                ₹{total.toLocaleString()} spent of ₹{budget.toLocaleString()} budget
+                ₹{total.toLocaleString()} spent of ₹{totalBudget.toLocaleString()} budget
               </p>
             )}
           </div>
@@ -202,7 +204,7 @@ export default function ExpenseSplitter() {
           </div>
           <div className="flex justify-between mt-1.5">
             <span className="text-teal-400 text-xs font-semibold">₹{total.toLocaleString()} spent</span>
-            <span className="text-teal-100/40 text-xs">₹{Math.max(budget - total, 0).toLocaleString()} remaining</span>
+            <span className="text-teal-100/40 text-xs">₹{Math.max(totalBudget - total, 0).toLocaleString()} remaining</span>
           </div>
         </div>
 

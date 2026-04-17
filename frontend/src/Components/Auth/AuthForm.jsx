@@ -92,8 +92,9 @@ export default function AuthForm(){
         }
         }
 
+        let combinedOtp = ''
         if (mode === 'reset') {
-        const combinedOtp = otpDigits.join('').trim()
+        combinedOtp = otpDigits.join('').trim()
         if (!combinedOtp || combinedOtp.length !== 6) {
             setMessage('Please enter the 6-digit OTP sent to your email')
             setLoading(false)
@@ -109,37 +110,32 @@ export default function AuthForm(){
             setLoading(false)
             return
         }
-        form.otp = combinedOtp
         }
 
         // payload for api calls
         try {
-            const payload = { email: form.email }
+            let payload = {}
             let res
 
             if (mode === 'login') {
-            payload.password = form.password
+            payload = { email: form.email, password: form.password }
             res = await apiLogin(payload)
             } 
             else if (mode === 'signup') {
-            payload.name = form.name
-            payload.password = form.password
-            payload.cpassword = form.cpassword
+            payload = { name: form.name, email: form.email, password: form.password, cpassword: form.cpassword }
             res = await apiSignup(payload)
             if(inviteToken){
                 await acceptRequest(inviteToken)
                 .then(navigate('/profile'))
                 .catch((e) => console.log(e));
             }
-            
             } 
             else if (mode === 'forgot') {
+            payload = { email: form.email }
             res = await apiForget(payload)
             }
             else if (mode === 'reset') {
-            payload.otp = form.otp
-            payload.password = form.password
-            payload.cpassword = form.cpassword
+            payload = { otp: combinedOtp, password: form.password, cpassword: form.cpassword }
             res = await apiCreatePassword(payload)
             }
 
