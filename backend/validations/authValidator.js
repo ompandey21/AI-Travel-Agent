@@ -44,10 +44,6 @@ const loginSchema = Joi.object({
     password
 });
 
-const forgetSchema = Joi.object({
-    email,
-});
-
 const otp = Joi.string()
     .length(6)
     .pattern(/^[0-9]{6}$/)
@@ -67,6 +63,5 @@ const createPasswordSchema = Joi.object({
 module.exports = {
     signUpSchema,
     loginSchema,
-    forgetSchema,
     createPasswordSchema
 }

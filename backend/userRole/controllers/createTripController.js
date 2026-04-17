@@ -10,9 +10,8 @@ const {
 const Crypto = require("crypto");
 const sendEmail = require("../../utils/sendMail");
 const { Op } = require("sequelize");
-const { hashPass } = require("./authController");
 const jwt = require("jsonwebtoken");
-const { createTripSchema } = require("../../validations/tripValidator");
+const { createTripSchema, inviteSchema } = require("../../validations/tripValidator");
 
 const { getCoordinates } = require("../../utils/geoCode");
 
@@ -130,9 +129,15 @@ exports.createTrip = async (req, res) => {
 
 exports.inviteUser = async (req, res) => {
   try {
+    const { error } = inviteSchema.validate(req.body);
+
+    if (error) {
+      return res.status(400).json({
+        message: error.details[0].message,
+      });
+    }
     const { tripId } = req.params;
     const { email } = req.body;
-    let username = "";
     const userId = req.user && req.user.id;
 
     const findAdmin = await TripMember.findOne({
@@ -162,6 +167,8 @@ exports.inviteUser = async (req, res) => {
       where: { tripId, email },
     });
 
+    let inviteRecord;
+
     if (findTripMember) {
       if (findTripMember.status === "accepted") {
         return res
@@ -178,59 +185,37 @@ exports.inviteUser = async (req, res) => {
             .json({ message: "User is already invited to this trip" });
         }
 
+        // Update expired invite
         const randomToken = Crypto.randomBytes(32).toString("hex");
-
         await findTripMember.update({
           inviteToken: randomToken,
           inviteExpire: new Date(Date.now() + 24 * 60 * 60 * 1000),
         });
-
-        const FRONTEND_URL =
-          process.env.FRONTEND_URL || "http://localhost:5173";
-        const inviteLink = `${FRONTEND_URL.replace(
-          /\/$/,
-          ""
-        )}/join-trip?token=${randomToken}`;
-
-        const trip = await TripData.findByPk(tripId);
-        const destination = trip.destination;
-        const startDate = new Date(trip.startDate).toLocaleDateString();
-
-        const subject = `Invitiation to join the trip to ${destination}`;
-        const body = `Hi, \n\nYou are invited to join the trip to ${destination} on ${startDate} \n\nClick on the link below to join \n\n${inviteLink}`;
-
-        await sendEmail(email, subject, body);
-
-        return res.status(200).json({ message: "Invitation sent" });
+        inviteRecord = findTripMember;
       }
+    } else {
+      // Create new invite
+      const findUser = await UserAuth.findOne({ where: { email } });
+      const username = findUser ? findUser.name : "";
+
+      const randomToken = Crypto.randomBytes(32).toString("hex");
+      inviteRecord = await TripMember.create({
+        tripId,
+        email,
+        name: username,
+        status: "invited",
+        inviteToken: randomToken,
+        inviteExpire: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      });
     }
-
-    const findUser = await UserAuth.findOne({ where: { email } });
-    if (findUser) username = findUser.name;
-
-    const randomToken = Crypto.randomBytes(32).toString("hex");
-
-    await TripMember.create({
-      tripId,
-      email,
-      name: username,
-      status: "invited",
-      inviteToken: randomToken,
-      inviteExpire: new Date(Date.now() + 24 * 60 * 60 * 1000),
-    });
-
-    const FRONTEND_URL =
-      process.env.FRONTEND_URL || "http://localhost:5173";
-    const inviteLink = `${FRONTEND_URL.replace(
-      /\/$/,
-      ""
-    )}/join-trip?token=${randomToken}`;
+    const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+    const inviteLink = `${FRONTEND_URL.replace(/\/$/, "")}/join-trip?token=${inviteRecord.inviteToken}`;
 
     const trip = await TripData.findByPk(tripId);
     const destination = trip.destination;
     const startDate = new Date(trip.startDate).toLocaleDateString();
 
-    const subject = `Invitiation to join the trip to ${destination}`;
+    const subject = `Invitation to join the trip to ${destination}`;
     const body = `Hi, \n\nYou are invited to join the trip to ${destination} on ${startDate} \n\nClick on the link below to join \n\n${inviteLink}`;
 
     await sendEmail(email, subject, body);
@@ -282,7 +267,6 @@ exports.verifyInvite = async (req, res) => {
 exports.acceptInvite = async (req, res) => {
   try {
     const { token } = req.query;
-    // const { name, password } = req.body;
     if (!token) {
       return res.status(400).json({ message: "Missing invite token" });
     }
@@ -291,14 +275,6 @@ exports.acceptInvite = async (req, res) => {
       return res.status(400).json({ message: "Invalid invite token" });
     }
     const user = await UserAuth.findOne({ where: { email: invite.email } });
-    // if (!user) {
-    //   const hashedpass = await hashPass(password);
-    //   user = await UserAuth.create({
-    //     name,
-    //     email: invite.email,
-    //     password: hashedpass,
-    //   });
-    // }
     invite.userId = user.id;
     invite.name = user.name;
     invite.status = "accepted";
