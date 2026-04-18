@@ -21,7 +21,7 @@ def create_plan(places, matrix):
             - No explanation
             - No code
             - No text outside JSON
-            - Use this format:
+            - Use this format strictly:
 
             {{
             "day_plan": [
@@ -54,6 +54,7 @@ def extract_json(text):
         start = text.find("{")
         end = text.rfind("}") + 1
         clean_text = text[start:end]
+        print(f"DEBUG: Cleaned text for JSON: '{clean_text}'") # Add this
         return json.loads(clean_text)
-    except Exception:
-        return {"error": "Failed to parse", "raw": text}
+    except Exception as e:
+        return {"error": f"JSON Parse Error: {str(e)}", "raw": text}

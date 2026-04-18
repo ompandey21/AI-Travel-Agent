@@ -15,6 +15,9 @@ def get_places(city, activity):
 
         url = os.getenv("OVERPASS_API_URL")
         response = requests.post(url, data=query)
+        if not response.text:
+            print("Error: API returned an empty response")
+            return []
         data = response.json()
 
         places = []
@@ -28,10 +31,12 @@ def get_places(city, activity):
         return places
     except Exception as e :
         print("error", e)
+        return []
 
 def get_distance_matrix(places):
     if len(places) < 2:
-        raise Exception("Not enough places to calculate distance matrix")
+        print("Not enough places to calculate distance matrix")
+        return []
     try :
         coords = ";".join([f"{p['lon']},{p['lat']}" for p in places])
         url = f'{os.getenv("DISTANCE_MATRIX_API")}{coords}'
