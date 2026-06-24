@@ -39,6 +39,7 @@ function computeTripDayIndex(startDateStr) {
   start.setHours(0, 0, 0, 0);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  if (today < start) return null;
   return Math.floor((today - start) / (1000 * 60 * 60 * 24));
 }
 
@@ -198,12 +199,10 @@ function AddSlotModal({ dayId, dayLabel, onClose, onSuccess }) {
 }
 
 // ─── AI Planner Modal ────────────────────────────────────────────────────────
-
 const tourismValues = [
   "attraction", "museum", "gallery", "artwork", "zoo", "theme_park",
-  "aquarium", "viewpoint", "hotel", "hostel", "guest_house", "motel",
-  "resort", "apartment", "camp_site", "caravan_site", "chalet",
-  "alpine_hut", "wilderness_hut", "information", "picnic_site", "trailhead", "not_sure",
+  "viewpoint", "camp_site", "caravan_site", "chalet",
+  "information", "picnic_site", "trailhead", "not_sure",
 ];
 
 const ACTIVITY_LABELS = {
@@ -213,19 +212,10 @@ const ACTIVITY_LABELS = {
   artwork: "Artwork",
   zoo: "Zoo",
   theme_park: "Theme Park",
-  aquarium: "Aquarium",
   viewpoint: "Viewpoint",
-  hotel: "Hotel",
-  hostel: "Hostel",
-  guest_house: "Guest House",
-  motel: "Motel",
-  resort: "Resort",
-  apartment: "Apartment",
   camp_site: "Camp Site",
   caravan_site: "Caravan Site",
   chalet: "Chalet",
-  alpine_hut: "Alpine Hut",
-  wilderness_hut: "Wilderness Hut",
   information: "Information",
   picnic_site: "Picnic Site",
   trailhead: "Trailhead",
@@ -674,8 +664,11 @@ export default function DailyPlan() {
   const [slotToDelete, setSlotToDelete] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  const currentDayIndex = trip ? computeTripDayIndex(trip.startDate) : 0;
-  const clampedTodayIndex = Math.max(0, Math.min(currentDayIndex ?? 0, days.length - 1));
+  const currentDayIndex = trip ? computeTripDayIndex(trip.startDate) : null;
+  const tripHasStarted = currentDayIndex !== null;
+  const clampedTodayIndex = tripHasStarted
+    ? Math.max(0, Math.min(currentDayIndex, days.length - 1))
+    : 0;
 
   // The displayed day index: user-controlled, falls back to today's clamped index
   const displayDayIndex = viewDayIndex !== null
@@ -684,7 +677,7 @@ export default function DailyPlan() {
 
   const currentDay = days[displayDayIndex] ?? null;
 
-  const isToday = displayDayIndex === clampedTodayIndex;
+  const isToday = tripHasStarted && displayDayIndex === clampedTodayIndex;
 
   const now = nowMinutes();
   const activeSlotIndex = (() => {
