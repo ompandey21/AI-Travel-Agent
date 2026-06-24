@@ -2,6 +2,21 @@ const axios = require("axios");
 const { Op } = require("sequelize");
 const { ItineraryData, DayData, SlotData, TripData, TripMember } = require("../../config/db");
 
+function normalizeText(text) {
+    return (text || "").toString().trim().toLowerCase();
+}
+
+function extractPlaceNameFromActivity(activityText) {
+    if (!activityText) return null;
+    const text = activityText.toString().trim();
+    const lower = text.toLowerCase();
+    const atIndex = lower.lastIndexOf(" at ");
+    if (atIndex !== -1) {
+        return text.slice(atIndex + 4).trim();
+    }
+    return text;
+}
+
 exports.createItinerary = async (req, res) => {
     try{
         const { tripId } = req.params;
@@ -51,6 +66,34 @@ exports.createSlot = async(req, res) =>{
         if(itinerary.isFinalized){
             return res.status(400).json({ message: "Itinerary is finalized, cannot add new slot" });
         }
+
+        const itineraryDays = await DayData.findAll({
+            where: { itinerary_id: itinerary.id },
+            attributes: ['id'],
+            raw: true,
+        });
+        const itineraryDayIds = itineraryDays.map((d) => d.id);
+
+        const normalizedActivity = normalizeText(activity);
+        const existingSlots = await SlotData.findAll({
+            where: { day_id: { [Op.in]: itineraryDayIds } },
+            attributes: ['activity'],
+            raw: true,
+        });
+
+        const existingSlotWithSameActivity = existingSlots.find((slot) => normalizeText(slot.activity) === normalizedActivity);
+        if (existingSlotWithSameActivity) {
+            return res.status(400).json({ message: "A slot with the same activity already exists in this itinerary" });
+        }
+
+        const existingPlace = existingSlots.find((slot) => {
+            const existingPlaceName = normalizeText(extractPlaceNameFromActivity(slot.activity));
+            return existingPlaceName && normalizedActivity.includes(existingPlaceName);
+        });
+        if (existingPlace) {
+            return res.status(400).json({ message: "A slot with the same place already exists in another day of this itinerary" });
+        }
+
         const isAdmin = await TripMember.findOne({
             where: {
                 userId: req.user.id,
@@ -96,16 +139,34 @@ exports.createPlanWithAI = async (req, res) => {
                 role: 'admin'
             }
         });
-
         const status = isAdmin ? "approved" : "pending";
+
+        const itineraryDays = await DayData.findAll({
+            where: { itinerary_id: itinerary.id },
+            attributes: ['id'],
+            raw: true,
+        });
+        const itineraryDayIds = itineraryDays.map((d) => d.id);
+
+        const existingSlots = await SlotData.findAll({
+            where: { day_id: { [Op.in]: itineraryDayIds } },
+            attributes: ['activity'],
+            raw: true,
+        });
+
+        const existingPlaces = Array.from(new Set(
+            existingSlots
+                .map((slot) => normalizeText(extractPlaceNameFromActivity(slot.activity)))
+                .filter(Boolean)
+        ));
 
         const response = await axios.post(
             `${process.env.ML_SERVICE_API}/itinerary/create-slots`,
-            { city, activity }
+            { city, activity, excludePlaces: existingPlaces }
         );
 
         const dayPlan = response?.data?.data?.day_plan;
-        // console.log(dayPlan);
+
         if (!dayPlan || !Array.isArray(dayPlan)) {
             return res.status(500).json({ message: "Invalid response from ML service" });
         }
@@ -133,9 +194,14 @@ exports.createPlanWithAI = async (req, res) => {
         };
 
         const createdSlots = [];
+        const usedPlaces = new Set(existingPlaces.map(normalizeText));
 
         for (const item of dayPlan) {
             try {
+                const place = item.place?.trim();
+                const normalizedPlace = normalizeText(place);
+                if (!place || usedPlaces.has(normalizedPlace)) continue;
+
                 const start = parseTime(item.time);
                 const duration = parseDuration(item.duration);
 
@@ -174,6 +240,7 @@ exports.createPlanWithAI = async (req, res) => {
                 });
 
                 createdSlots.push(slot);
+                usedPlaces.add(normalizedPlace);
 
             } catch {
                 continue;
