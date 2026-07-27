@@ -262,8 +262,7 @@ function AIPlannerModal({ dayId, dayLabel, onClose, onSuccess }) {
     setMagic(true);
     spawnStars();
     try {
-      const apiActivity = activity === "not_sure" ? "yes" : activity;
-      await createPlanAI(dayId, { city: city.trim(), activity: apiActivity });
+      await createPlanAI(dayId, { city: city.trim(), activity });
       // Brief pause so the animation is visible
       await new Promise((r) => setTimeout(r, 1800));
       onSuccess();
@@ -455,7 +454,7 @@ function AIPlannerModal({ dayId, dayLabel, onClose, onSuccess }) {
 
 // ─── Delete Confirm Modal ─────────────────────────────────────────────────────
 
-function DeleteConfirmModal({ slot, onClose, onConfirm, loading }) {
+function DeleteConfirmModal({ slot, onClose, onConfirm, loading, error }) {
   return (
     <motion.div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm"
@@ -485,6 +484,8 @@ function DeleteConfirmModal({ slot, onClose, onConfirm, loading }) {
         <p className="text-slate-400 text-sm mb-5 bg-white/[0.03] border border-white/5 rounded-lg px-3 py-2 line-clamp-2">
           {slot?.activity || slot?.label || "This slot"}
         </p>
+
+        {error && <p className="text-red-400 text-xs mb-3">{error}</p>}
 
         <div className="flex gap-2">
           <button
@@ -663,6 +664,7 @@ export default function DailyPlan() {
   // Delete modal state
   const [slotToDelete, setSlotToDelete] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState(null);
 
   const currentDayIndex = trip ? computeTripDayIndex(trip.startDate) : null;
   const tripHasStarted = currentDayIndex !== null;
@@ -737,12 +739,14 @@ export default function DailyPlan() {
   const handleDeleteSlot = async () => {
     if (!slotToDelete) return;
     setDeleteLoading(true);
+    setDeleteError(null);
     try {
       await deleteSlotFun(slotToDelete.id || slotToDelete._id);
       setSlotToDelete(null);
       fetchAll();
     } catch (e) {
       console.error(e);
+      setDeleteError(e?.response?.data?.message || "Failed to delete slot. Please try again.");
     } finally {
       setDeleteLoading(false);
     }
@@ -778,7 +782,9 @@ export default function DailyPlan() {
           <h2 className="text-xl sm:text-2xl font-bold text-white mb-1">Trip Itinerary</h2>
           {trip && (
             <p className="text-teal-100/50 text-xs sm:text-sm">
-              {trip.source && trip.destination ? `${trip.source} → ${trip.destination} · ` : ""}
+              {(trip.startLocation ?? trip.start_location) && trip.destination
+                ? `${trip.startLocation ?? trip.start_location} → ${trip.destination} · `
+                : ""}
               {trip.totalDays ?? days.length} Days
               {trip.budget ? ` · ₹${Number(trip.budget).toLocaleString("en-IN")}` : ""}
             </p>
@@ -1012,7 +1018,8 @@ export default function DailyPlan() {
           <DeleteConfirmModal
             slot={slotToDelete}
             loading={deleteLoading}
-            onClose={() => setSlotToDelete(null)}
+            error={deleteError}
+            onClose={() => { setSlotToDelete(null); setDeleteError(null); }}
             onConfirm={handleDeleteSlot}
           />
         )}

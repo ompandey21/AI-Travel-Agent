@@ -39,6 +39,7 @@ export default function TripCreationPage() {
   const [showStartSuggestions, setShowStartSuggestions] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [errors, setErrors] = useState({});
+  const [submitError, setSubmitError] = useState("");
 
   const filteredStartCities = startLocationInput.trim().length > 0
     ? INDIAN_CITIES.filter(c => c.toLowerCase().includes(startLocationInput.toLowerCase())).slice(0, 8)
@@ -76,6 +77,7 @@ export default function TripCreationPage() {
     const errs = validate();
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
     setErrors({});
+    setSubmitError("");
     setSubmitting(true);
     try {
       const formData = new FormData();
@@ -93,16 +95,18 @@ export default function TripCreationPage() {
       });
       if (res.status === 201) navigate('/profile');
     } catch (e) {
-      console.log(e);
+      setSubmitError(e?.response?.data?.message || e.message || "Failed to create trip. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-white relative overflow-hidden px-2 py-6 sm:px-4">
 
 
       {/* MAIN CONTAINER */}
-      <div className="w-[95%] max-w-6xl h-[80vh] rounded-3xl overflow-hidden shadow-2xl grid md:grid-cols-2 bg-white">
+      <div className="w-full sm:w-[95%] max-w-6xl h-auto md:h-[80vh] max-h-[95vh] rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl grid md:grid-cols-2 bg-white">
 
         {/* LEFT VIDEO */}
         <div className="hidden md:block relative">
@@ -128,13 +132,13 @@ export default function TripCreationPage() {
         </div>
 
         {/* RIGHT FORM */}
-        <div className="flex items-center justify-center p-6 md:p-10 overflow-y-auto">
+        <div className="flex items-center justify-center p-4 sm:p-6 md:p-10 overflow-y-auto max-h-[95vh] md:max-h-none">
 
-          <div className="w-full max-w-md space-y-6">
+          <div className="w-full max-w-md space-y-5 sm:space-y-6">
 
             {/* TITLE */}
             <div>
-              <h1 className="text-3xl font-bold text-gray-800 mb-1">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-1">
                 Create Trip
               </h1>
               <p className="text-sm text-gray-500">
@@ -308,12 +312,15 @@ export default function TripCreationPage() {
             />
             {errors.cover && <p className="text-xs text-red-500 mt-1">{errors.cover}</p>}
 
+            {submitError && <p className="text-xs text-red-500 mt-1">{submitError}</p>}
+
             {/* BUTTON */}
             <motion.button
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
+              whileHover={{ scale: submitting ? 1 : 1.03 }}
+              whileTap={{ scale: submitting ? 1 : 0.97 }}
               onClick={handleSubmit}
-              className="w-full py-3 rounded-xl text-white font-semibold"
+              disabled={submitting}
+              className="w-full py-3 rounded-xl text-white font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
               style={{
                 background: "#3D9A9B"
               }}

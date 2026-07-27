@@ -7,6 +7,16 @@ const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 const Header = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
+  const [width, setWidth] = useState(() => (typeof window !== "undefined" ? window.innerWidth : 1024));
+
+  useEffect(() => {
+    const fn = () => setWidth(window.innerWidth);
+    window.addEventListener("resize", fn);
+    return () => window.removeEventListener("resize", fn);
+  }, []);
+
+  const isMobile = width < 640;
+  const isTablet = width >= 640 && width < 900;
 
   useEffect(() => {
     axios
@@ -38,8 +48,9 @@ const Header = () => {
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        padding: "18px 56px",
-        fontFamily: "'Satoshi', sans-serif",  
+        padding: isMobile ? "14px 16px" : isTablet ? "16px 28px" : "18px 56px",
+        gap: isMobile ? 10 : 0,
+        fontFamily: "'Satoshi', sans-serif",
       }}
     >
       <style>{`@import url('https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@800,700&f[]=satoshi@400,500,700&display=swap');`}</style>
@@ -63,8 +74,8 @@ const Header = () => {
       {/* NAV LINKS */}
       <div
         style={{
-          display: "flex",
-          gap: 36,
+          display: isMobile ? "none" : "flex",
+          gap: isTablet ? 20 : 36,
           fontSize: 13.5,
           fontWeight: 500,
           color: "rgba(255,255,255,0.55)",
@@ -112,8 +123,11 @@ const Header = () => {
             Login / Sign up
           </button>
         ) : (
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <span style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", fontWeight: 500 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+            <span style={{
+              fontSize: 13, color: "rgba(255,255,255,0.6)", fontWeight: 500,
+              maxWidth: isMobile ? 70 : 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+            }}>
               {user.name}
             </span>
 

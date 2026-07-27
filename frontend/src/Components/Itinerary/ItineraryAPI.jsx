@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API = "http://localhost:8080/api";
+const API = `${import.meta.env.VITE_API_URL || "http://localhost:8080"}/api`;
 
 
 export const getItinerary = async (tripId) => {
@@ -61,11 +61,9 @@ export const updateSlotFun = async (slotId, payload) => {
     return res.data;  
 }
 export const deleteSlotFun = async (slotId) => {
-    const res = await axios.delete(`${API}/itinerary/delete-slot/${slotId}`, 
-        {},
+    const res = await axios.delete(`${API}/itinerary/delete-slot/${slotId}`,
         { withCredentials : true });
-    // console.log(res);
-    return res.data;  
+    return res.data;
 }
 
 export const createPlanAI = async (dayId, payload) => {

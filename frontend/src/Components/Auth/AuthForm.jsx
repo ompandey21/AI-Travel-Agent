@@ -77,6 +77,11 @@ export default function AuthForm(){
             setLoading(false)
             return
         }
+        if (password.length < 8) {
+            setMessage('Password must be at least 8 characters long')
+            setLoading(false)
+            return
+        }
         if (password !== cpassword) {
             setMessage('Passwords do not match')
             setLoading(false)
@@ -105,6 +110,11 @@ export default function AuthForm(){
             setLoading(false)
             return
         }
+        if (password.length < 8) {
+            setMessage('Password must be at least 8 characters long')
+            setLoading(false)
+            return
+        }
         if (password !== cpassword) {
             setMessage('Passwords do not match')
             setLoading(false)
@@ -125,11 +135,13 @@ export default function AuthForm(){
             payload = { name: form.name, email: form.email, password: form.password, cpassword: form.cpassword }
             res = await apiSignup(payload)
             if(inviteToken){
-                await acceptRequest(inviteToken)
-                .then(navigate('/profile'))
-                .catch((e) => console.log(e));
+                try {
+                    await acceptRequest(inviteToken)
+                } catch (e) {
+                    console.log(e)
+                }
             }
-            } 
+            }
             else if (mode === 'forgot') {
             payload = { email: form.email }
             res = await apiForget(payload)
@@ -175,9 +187,9 @@ export default function AuthForm(){
         </div>
 
       {/* Right: form */}
-        <div className="flex-1 flex items-center justify-center p-8">
-            <div className="w-full max-w-md p-8 rounded-2xl bg-[rgba(255,255,255,0.03)] border border-white/8 backdrop-blur-md shadow-xl">
-                <h2 className="text-3xl font-bold mb-1">{mode === 'login' ? 'Welcome back' : mode === 'signup' ? 'Create an account' : mode === 'reset' ? 'Reset your password' : 'Reset password'}</h2>
+        <div className="flex-1 flex items-center justify-center p-4 sm:p-8">
+            <div className="w-full max-w-md p-5 sm:p-8 rounded-2xl bg-[rgba(255,255,255,0.03)] border border-white/8 backdrop-blur-md shadow-xl">
+                <h2 className="text-2xl sm:text-3xl font-bold mb-1">{mode === 'login' ? 'Welcome back' : mode === 'signup' ? 'Create an account' : mode === 'reset' ? 'Reset your password' : 'Reset password'}</h2>
                 <p className="text-sm text-white/60 mb-6">{mode === 'login' ? 'Sign in to access your itineraries.' : mode === 'signup' ? 'Join Iternation to start planning.' : mode === 'reset' ? 'Enter your new password below.' : 'We will send a reset link to your email.'}</p>
 
                 {message && <div className="mb-4 text-sm text-red-500">{message}</div>}
@@ -194,7 +206,7 @@ export default function AuthForm(){
                     {mode === 'reset' && (
                     <div>
                         <div className="mb-3 text-sm text-white/60">Enter the 6-digit OTP</div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-1.5 sm:gap-2 overflow-x-auto">
                         {otpDigits.map((d, i) => (
                             <input
                             key={i}
@@ -231,7 +243,7 @@ export default function AuthForm(){
                             }}
                             inputMode="numeric"
                             maxLength={1}
-                            className="w-10 h-10 text-center rounded border bg-white/5"
+                            className="w-9 h-9 sm:w-10 sm:h-10 text-center rounded border bg-white/5 flex-shrink-0"
                             />
                         ))}
                         </div>

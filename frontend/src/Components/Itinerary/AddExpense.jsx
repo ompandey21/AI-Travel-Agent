@@ -19,6 +19,15 @@ export default function AddExpenseModal({ tripId, members, onClose, onSuccess, A
   const [error, setError]                     = useState(null);
   const [done, setDone]                       = useState(false);
 
+  // Keep the default equal-split selection in sync if members load/change after mount
+  useEffect(() => {
+    setSelectedMembers((prev) => {
+      const memberIds = members.map((m) => m.userId);
+      if (prev.length === 0) return memberIds;
+      return prev.filter((id) => memberIds.includes(id));
+    });
+  }, [members]);
+
   // Populate custom splits when switching to custom mode
   useEffect(() => {
     if (splitType === "custom") {
@@ -100,31 +109,31 @@ export default function AddExpenseModal({ tripId, members, onClose, onSuccess, A
         className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none"
       >
         <div
-          className="pointer-events-auto w-[80vw] max-w-2xl max-h-[85vh] overflow-y-auto
+          className="pointer-events-auto w-[92vw] sm:w-[80vw] max-w-2xl max-h-[85vh] overflow-y-auto
                      rounded-3xl bg-[#0d1a1a] border border-teal-400/20
-                     shadow-[0_0_80px_rgba(45,212,191,0.12)] p-8 flex flex-col gap-6"
+                     shadow-[0_0_80px_rgba(45,212,191,0.12)] p-5 sm:p-8 flex flex-col gap-5 sm:gap-6"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
               <span className="text-teal-400 text-[10px] font-bold tracking-[0.14em] uppercase block mb-1">
                 New Entry
               </span>
-              <h2 className="text-xl font-bold text-white">Add Expense</h2>
+              <h2 className="text-lg sm:text-xl font-bold text-white">Add Expense</h2>
             </div>
             <button
               onClick={onClose}
               className="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center
-                         justify-center text-teal-100/50 hover:text-white hover:bg-white/10 transition-colors"
+                         justify-center text-teal-100/50 hover:text-white hover:bg-white/10 transition-colors shrink-0"
             >
               <X size={16} />
             </button>
           </div>
 
           {/* Title + Amount + Split toggle */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2 flex flex-col gap-1.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="sm:col-span-2 flex flex-col gap-1.5">
               <label className="text-teal-100/50 text-xs font-semibold uppercase tracking-wider">Title</label>
               <input
                 value={title}

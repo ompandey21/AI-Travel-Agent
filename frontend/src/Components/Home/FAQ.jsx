@@ -29,7 +29,7 @@ function FAQItem({ faq, index, isInView }) {
         {/* Question row */}
         <button
           onClick={() => setOpen(!open)}
-          className="w-full flex items-center justify-between px-7 py-6 text-left group"
+          className="w-full flex items-center justify-between px-4 sm:px-7 py-4 sm:py-6 text-left group"
         >
           <span
             className="text-base md:text-lg font-medium pr-6 transition-colors duration-300 leading-snug"
@@ -72,7 +72,7 @@ function FAQItem({ faq, index, isInView }) {
               transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
               style={{ overflow: "hidden" }}
             >
-              <div className="px-7 pb-7">
+              <div className="px-4 sm:px-7 pb-4 sm:pb-7">
                 {/* Thin accent rule */}
                 <div className="mb-5 h-px" style={{ background: "linear-gradient(90deg, rgba(61,154,155,0.4), transparent)" }} />
                 <p
@@ -106,7 +106,7 @@ export default function FAQSection() {
   return (
     <section
       ref={sectionRef}
-      className="relative overflow-hidden py-28 md:py-40"
+      className="relative overflow-hidden py-16 sm:py-28 md:py-40"
       style={{ background: "linear-gradient(180deg, #020617 0%, #0a1425 50%, #0f172a 100%)" }}
     >
       {/* Noise texture */}
@@ -132,7 +132,7 @@ export default function FAQSection() {
         style={{ background: "linear-gradient(180deg, #020617 0%, transparent 100%)" }}
       />
 
-      <div className="relative mx-auto max-w-3xl px-6">
+      <div className="relative mx-auto max-w-3xl px-4 sm:px-6">
 
         {/* Heading block */}
         <motion.div
@@ -140,7 +140,7 @@ export default function FAQSection() {
           initial={{ opacity: 0, y: 28 }}
           animate={headingInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-          className="text-center mb-16 md:mb-20"
+          className="text-center mb-10 sm:mb-16 md:mb-20"
         >
           {/* Eyebrow */}
           <div className="flex items-center justify-center gap-3 mb-6">
@@ -155,7 +155,7 @@ export default function FAQSection() {
           </div>
 
           <h2
-            className="text-4xl md:text-5xl lg:text-[3.25rem] font-bold text-white mb-5"
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-[3.25rem] font-bold text-white mb-5"
             style={{
               fontFamily: "'Sora', sans-serif",
               letterSpacing: "-0.025em",
