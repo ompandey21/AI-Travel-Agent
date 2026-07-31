@@ -56,8 +56,7 @@ function UploadModal({ file, onConfirm, onCancel, uploading }) {
   }, []);
 
   const titleValid = title.trim().length > 0;
-  const descValid  = description.trim().length > 0;
-  const isValid    = titleValid && descValid;
+  const isValid    = titleValid;
 
   const handleSubmit = () => {
     setTouched(true);
@@ -71,7 +70,7 @@ function UploadModal({ file, onConfirm, onCancel, uploading }) {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.18 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
       onClick={(e) => { if (e.target === e.currentTarget && !uploading) onCancel(); }}
     >
       <motion.div
@@ -79,7 +78,7 @@ function UploadModal({ file, onConfirm, onCancel, uploading }) {
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.93, y: 12 }}
         transition={{ duration: 0.2 }}
-        className="w-full max-w-sm mx-4 rounded-2xl bg-[#0d1f1e] border border-teal-400/20 shadow-2xl shadow-black/70 p-6"
+        className="w-full max-w-sm rounded-2xl bg-[#0d1f1e] border border-teal-400/20 shadow-2xl shadow-black/70 p-5 sm:p-6"
       >
         {/* header */}
         <div className="flex items-center justify-between mb-5">
@@ -134,34 +133,18 @@ function UploadModal({ file, onConfirm, onCancel, uploading }) {
         {/* description input */}
         <div className="mb-5">
           <label className="text-teal-400 text-[10px] font-bold tracking-[0.1em] uppercase block mb-2">
-            Description <span className="text-red-400">*</span>
+            Description <span className="text-teal-100/30 normal-case">(optional)</span>
           </label>
           <textarea
             rows={3}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Escape" && !uploading) onCancel(); }}
-            onBlur={() => setTouched(true)}
             placeholder="e.g. Confirmed booking for 2 nights at Hotel Madurai"
-            className={`w-full bg-white/[0.05] border rounded-xl px-4 py-2.5 text-white text-sm
+            className="w-full bg-white/[0.05] border border-teal-400/20 rounded-xl px-4 py-2.5 text-white text-sm
                        placeholder:text-teal-100/25 outline-none transition-colors resize-none
-                       ${touched && !descValid
-                         ? "border-red-400/50 focus:border-red-400"
-                         : "border-teal-400/20 focus:border-teal-400/50"
-                       }`}
+                       focus:border-teal-400/50"
           />
-          <AnimatePresence>
-            {touched && !descValid && (
-              <motion.p
-                initial={{ opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                className="text-red-400 text-xs mt-1.5"
-              >
-                Description is required
-              </motion.p>
-            )}
-          </AnimatePresence>
         </div>
 
         {/* actions */}
@@ -199,7 +182,7 @@ function DeletePopover({ fileName, onConfirm, onCancel, loading }) {
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.92, y: -6 }}
       transition={{ duration: 0.16 }}
-      className="absolute right-0 top-12 z-50 w-64 rounded-xl bg-[#0f1f1e] border border-red-400/25
+      className="absolute right-0 top-12 z-50 w-[min(16rem,calc(100vw-2.5rem))] rounded-xl bg-[#0f1f1e] border border-red-400/25
                  shadow-2xl shadow-black/60 p-4"
     >
       <div className="flex items-start gap-2.5 mb-3">
@@ -368,6 +351,7 @@ function FileRow({ file, index, onDelete }) {
   const [viewing, setViewing]         = useState(false);
   const [viewUrl, setViewUrl]         = useState(null);
   const [showViewer, setShowViewer]   = useState(false);
+  const [rowError, setRowError]       = useState(null);
   const rowRef = useRef(null);
 
   const displayName = file.title || file.name || file.fileName || file.originalName || "Unnamed file";
@@ -391,6 +375,7 @@ function FileRow({ file, index, onDelete }) {
   const handleDownload = async () => {
     if (downloading) return;
     setDownloading(true);
+    setRowError(null);
     try {
       const doc = await getDocumentById(file.id || file._id);
       const fileUrl = doc.fileUrl || doc.url;
@@ -404,6 +389,7 @@ function FileRow({ file, index, onDelete }) {
       a.remove();
     } catch (err) {
       console.error("Download failed:", err);
+      setRowError("Download failed. Please try again.");
     } finally {
       setDownloading(false);
     }
@@ -411,6 +397,7 @@ function FileRow({ file, index, onDelete }) {
 
   const handleView = async () => {
     if (viewing) return;
+    setRowError(null);
     setShowViewer(true);
     if (viewUrl) return; // already fetched
     setViewing(true);
@@ -419,6 +406,8 @@ function FileRow({ file, index, onDelete }) {
       setViewUrl(doc.fileUrl || doc.url || null);
     } catch (err) {
       console.error("View failed:", err);
+      setShowViewer(false);
+      setRowError("Couldn't load this file. Please try again.");
     } finally {
       setViewing(false);
     }
@@ -426,11 +415,13 @@ function FileRow({ file, index, onDelete }) {
 
   const handleConfirmDelete = async () => {
     setDeleting(true);
+    setRowError(null);
     try {
       await deleteDocument(file.id || file._id);
       onDelete(file.id || file._id);
     } catch (err) {
       console.error("Delete failed:", err);
+      setRowError("Delete failed. Please try again.");
     } finally {
       setDeleting(false);
       setShowPopover(false);
@@ -447,22 +438,23 @@ function FileRow({ file, index, onDelete }) {
       animate="visible"
       exit="exit"
       layout
-      className="relative flex items-center gap-4 px-5 py-3.5 rounded-xl bg-white/[0.04] border border-teal-400/10
+      className="relative flex items-center gap-2 sm:gap-4 px-3 sm:px-5 py-3 sm:py-3.5 rounded-xl bg-white/[0.04] border border-teal-400/10
                  hover:border-teal-400/20 transition-colors"
     >
-      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${cfg.bg} ${cfg.border}`}>
+      <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 border ${cfg.bg} ${cfg.border}`}>
         <Icon size={17} className={cfg.text} />
       </div>
 
       <div className="flex-1 min-w-0">
         <p className="text-white text-sm font-semibold truncate">{displayName}</p>
-        <p className="text-teal-100/40 text-xs mt-0.5">
+        <p className="text-teal-100/40 text-xs mt-0.5 truncate">
           {sizeStr !== "—" ? `${sizeStr} · ` : ""}
           Uploaded by <span className="text-teal-300/60">{uploader}</span> · {dateStr}
         </p>
+        {rowError && <p className="text-red-400 text-xs mt-1">{rowError}</p>}
       </div>
 
-      <div className="flex items-center gap-2 shrink-0">
+      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
         <motion.button
           whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
           onClick={handleDownload}
@@ -592,13 +584,13 @@ export default function Uploads() {
   };
 
   return (
-    <div className="p-8 h-full overflow-y-auto text-white">
+    <div className="p-4 sm:p-6 md:p-8 h-full overflow-y-auto overflow-x-hidden text-white">
 
       {/* Header */}
-      <div className="flex items-start justify-between mb-6">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-6">
+        <div className="min-w-0">
           <span className="text-teal-400 text-[10px] font-bold tracking-[0.12em] uppercase block mb-1.5">Uploads</span>
-          <h2 className="text-2xl font-bold text-white mb-1">Shared Files</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-white mb-1">Shared Files</h2>
           <p className="text-teal-100/50 text-sm">
             {loading ? "Loading…" : `${files.length} file${files.length !== 1 ? "s" : ""} shared by trip members`}
           </p>
@@ -609,8 +601,8 @@ export default function Uploads() {
           whileTap={{ scale: 0.97 }}
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-teal-400/15 border border-teal-400/40
-                     text-teal-400 text-sm font-semibold cursor-pointer disabled:opacity-60 transition-opacity"
+          className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-teal-400/15 border border-teal-400/40
+                     text-teal-400 text-sm font-semibold cursor-pointer disabled:opacity-60 transition-opacity shrink-0 w-full sm:w-auto"
         >
           <Upload size={14} />
           Upload File
@@ -630,7 +622,7 @@ export default function Uploads() {
           backgroundColor: dragging ? "rgba(45,212,191,0.08)" : "rgba(45,212,191,0.03)",
         }}
         transition={{ duration: 0.2 }}
-        className="mb-7 rounded-2xl border-2 border-dashed p-10 flex flex-col items-center gap-2 cursor-pointer"
+        className="mb-7 rounded-2xl border-2 border-dashed p-6 sm:p-10 flex flex-col items-center gap-2 cursor-pointer text-center"
       >
         <div className="w-12 h-12 rounded-2xl bg-teal-400/10 border border-teal-400/25 flex items-center justify-center mb-1">
           <CloudUpload size={22} className="text-teal-400/60" />

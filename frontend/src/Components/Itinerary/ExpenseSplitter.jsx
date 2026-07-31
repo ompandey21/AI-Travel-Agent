@@ -66,7 +66,7 @@ export default function ExpenseSplitter() {
       
 
       setExpenses(expRes.expenses || []);
-      setBudget(tripRes.budget || []);
+      setBudget(tripRes.budget || 0);
 
       setBalances(settleRes.balances || []);
       setSuggested(settleRes.suggestedSettlements || []);
@@ -86,17 +86,6 @@ export default function ExpenseSplitter() {
   }, [tripId]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
-
-  function Avatar({ name, size = "md" }) {
-  const sz = size === "sm" ? "w-7 h-7 text-xs" : "w-9 h-9 text-sm";
-  return (
-    <div className={`${sz} rounded-full bg-teal-400/15 border border-teal-400/30
-                    flex items-center justify-center text-teal-400 font-bold shrink-0`}>
-      {(name || "?")[0].toUpperCase()}
-    </div>
-  );
-}
-
 
   const handleSettle = async (suggestion) => {
     const key = `${suggestion.from}-${suggestion.to}`;
@@ -155,15 +144,15 @@ export default function ExpenseSplitter() {
 
   return (
     <>
-      <div className={`p-8 h-full overflow-hidden text-white transition-all duration-300 ${showModal ? "blur-sm pointer-events-none" : ""}`}>
+      <div className={`p-4 sm:p-6 md:p-8 h-full overflow-y-auto overflow-x-hidden text-white transition-all duration-300 ${showModal ? "blur-sm pointer-events-none" : ""}`}>
 
         {/* ── Header ── */}
-        <div className="flex items-start justify-between mb-6">
-          <div>
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-6">
+          <div className="min-w-0">
             <span className="text-teal-400 text-[10px] font-bold tracking-[0.12em] uppercase block mb-1.5">
               Expense Split
             </span>
-            <h2 className="text-2xl font-bold text-white mb-1">Trip Expenses</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-white mb-1">Trip Expenses</h2>
             {loading ? (
               <Skeleton className="h-4 w-48 mt-1" />
             ) : (
@@ -176,8 +165,8 @@ export default function ExpenseSplitter() {
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.97 }}
             onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-teal-400/15 border border-teal-400/40
-                       text-teal-400 text-sm font-semibold cursor-pointer hover:bg-teal-400/25 transition-colors"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-teal-400/15 border border-teal-400/40
+                       text-teal-400 text-sm font-semibold cursor-pointer hover:bg-teal-400/25 transition-colors shrink-0 w-full sm:w-auto"
           >
             <Plus size={14} />
             Add Expense
@@ -240,7 +229,7 @@ export default function ExpenseSplitter() {
         )}
 
         {/* ── Member Balances Grid ── */}
-        <div className="grid grid-cols-2 gap-4 mt-2 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2 mb-6">
           {loading
             ? [0, 1].map((i) => <Skeleton key={i} className="h-20 rounded-2xl" />)
             : balances.map((b, i) => (
@@ -270,47 +259,49 @@ export default function ExpenseSplitter() {
         </div>
 
         <div className="mb-6">
-          <div className="inline-flex rounded-2xl bg-white/[0.04] border border-white/10 p-1">
-            <button
-              type="button"
-              onClick={() => setActivePanel("allExpenses")}
-              className={`px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ease-out ${activePanel === "allExpenses"
-                ? "bg-teal-400/15 text-teal-100 border border-teal-400/20"
-                : "text-teal-100/60 hover:text-teal-100"
-              }`}
-            >
-              All Expenses
-            </button>
-            <button
-              type="button"
-              onClick={() => setActivePanel("allSettlements")}
-              className={`px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ease-out ${activePanel === "allSettlements"
-                ? "bg-teal-400/15 text-teal-100 border border-teal-400/20"
-                : "text-teal-100/60 hover:text-teal-100"
-              }`}
-            >
-              All Settlements
-            </button>
-            <button
-              type="button"
-              onClick={() => setActivePanel("myExpenses")}
-              className={`px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ease-out ${activePanel === "myExpenses"
-                ? "bg-teal-400/15 text-teal-100 border border-teal-400/20"
-                : "text-teal-100/60 hover:text-teal-100"
-              }`}
-            >
-              My Expenses
-            </button>
-            <button
-              type="button"
-              onClick={() => setActivePanel("mySettlements")}
-              className={`px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ease-out ${activePanel === "mySettlements"
-                ? "bg-teal-400/15 text-teal-100 border border-teal-400/20"
-                : "text-teal-100/60 hover:text-teal-100"
-              }`}
-            >
-              My Settlements
-            </button>
+          <div className="flex overflow-x-auto no-scrollbar -mx-1 px-1">
+            <div className="inline-flex rounded-2xl bg-white/[0.04] border border-white/10 p-1 gap-1 shrink-0">
+              <button
+                type="button"
+                onClick={() => setActivePanel("allExpenses")}
+                className={`shrink-0 whitespace-nowrap px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 ease-out ${activePanel === "allExpenses"
+                  ? "bg-teal-400/15 text-teal-100 border border-teal-400/20"
+                  : "text-teal-100/60 hover:text-teal-100"
+                }`}
+              >
+                All Expenses
+              </button>
+              <button
+                type="button"
+                onClick={() => setActivePanel("allSettlements")}
+                className={`shrink-0 whitespace-nowrap px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 ease-out ${activePanel === "allSettlements"
+                  ? "bg-teal-400/15 text-teal-100 border border-teal-400/20"
+                  : "text-teal-100/60 hover:text-teal-100"
+                }`}
+              >
+                All Settlements
+              </button>
+              <button
+                type="button"
+                onClick={() => setActivePanel("myExpenses")}
+                className={`shrink-0 whitespace-nowrap px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 ease-out ${activePanel === "myExpenses"
+                  ? "bg-teal-400/15 text-teal-100 border border-teal-400/20"
+                  : "text-teal-100/60 hover:text-teal-100"
+                }`}
+              >
+                My Expenses
+              </button>
+              <button
+                type="button"
+                onClick={() => setActivePanel("mySettlements")}
+                className={`shrink-0 whitespace-nowrap px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 ease-out ${activePanel === "mySettlements"
+                  ? "bg-teal-400/15 text-teal-100 border border-teal-400/20"
+                  : "text-teal-100/60 hover:text-teal-100"
+                }`}
+              >
+                My Settlements
+              </button>
+            </div>
           </div>
 
           <div className="mt-4 h-[min(62vh,calc(100vh-28rem))] min-h-[320px] rounded-3xl bg-white/[0.04] border border-white/10 overflow-hidden">
@@ -374,7 +365,7 @@ export default function ExpenseSplitter() {
                     ? <p className="text-teal-100/35 text-sm py-6 text-center">No settlement activity yet.</p>
                     : recentSettlements.map((s, i) => {
                         const isPending  = s.status === "pending";
-                        const isReceiver = s.receiver?.id === currentUserId;
+                        const isReceiver = (s.receiver?.id ?? s.receiver?.userId) === currentUserId;
                         const isActing   = actionLoading === s.id;
 
                         return (

@@ -53,7 +53,7 @@ const DestinationCards = ({ index, setIndex }) => {
   );
 
   return (
-    <div className="absolute right-1/2 translate-x-1/2 md:translate-x-0 md:right-20 bottom-16 md:bottom-24 flex gap-4 md:gap-5 z-40 items-end">
+    <div className="absolute right-1/2 translate-x-1/2 md:translate-x-0 md:right-20 bottom-4 sm:bottom-16 md:bottom-24 flex gap-2 sm:gap-4 md:gap-5 z-40 items-end">
       <AnimatePresence mode="popLayout" initial={false}>
         {slots.map((item, slot) => (
           <motion.div
@@ -65,7 +65,7 @@ const DestinationCards = ({ index, setIndex }) => {
             exit="exit"
             transition={{ duration: 0.65, ease: [0.32, 0.72, 0, 1] }}
             onClick={() => setIndex(destinations.findIndex(d => d.name === item.name))}
-            className="w-32 h-44 sm:w-36 sm:h-52 md:w-44 md:h-64 rounded-2xl overflow-hidden cursor-pointer shadow-2xl relative flex-shrink-0"
+            className="w-20 h-28 sm:w-32 sm:h-44 md:w-44 md:h-64 rounded-2xl overflow-hidden cursor-pointer shadow-2xl relative flex-shrink-0"
             style={{ willChange: "transform, opacity" }}
           >
             <img src={item.img} alt={item.name} className="w-full h-full object-cover" />
@@ -177,7 +177,7 @@ export default function HeroSection() {
         animate={{ opacity: 0.18 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 1.2 }}
-        className="absolute -bottom-20 left-1/3 w-[500px] h-[500px] rounded-full blur-[120px] pointer-events-none"
+        className="absolute -bottom-20 left-1/3 w-[280px] h-[280px] sm:w-[500px] sm:h-[500px] rounded-full blur-[120px] pointer-events-none"
         style={{ background: "radial-gradient(circle, #60a5fa, transparent 70%)" }}
       />
 
@@ -185,7 +185,7 @@ export default function HeroSection() {
       <SideProgress index={index} total={destinations.length} />
 
       {/* ── Text block ── */}
-      <div className="absolute px-6 md:px-0 left-1/2 md:left-32 -translate-x-1/2 md:translate-x-0 top-[52%] md:top-1/2 -translate-y-1/2 z-40 text-center md:text-left max-w-lg">
+      <div className="absolute px-4 sm:px-6 md:px-0 w-full sm:w-auto left-1/2 md:left-32 -translate-x-1/2 md:translate-x-0 top-[40%] sm:top-[48%] md:top-1/2 -translate-y-1/2 z-40 text-center md:text-left max-w-lg">
 
         {/* Tag pill */}
         <AnimatePresence mode="wait">
@@ -209,7 +209,7 @@ export default function HeroSection() {
             animate={{ opacity: 1, y: 0,  filter: "blur(0px)" }}
             exit={{ opacity: 0, y: -30,  filter: "blur(6px)" }}
             transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-            className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold tracking-tight mb-4 md:mb-5 leading-none"
+            className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold tracking-tight mb-4 md:mb-5 leading-none"
             style={{ fontFamily: "'Georgia', serif", textShadow: "0 4px 40px rgba(0,0,0,0.4)" }}
           >
             {dest.name}
@@ -230,8 +230,8 @@ export default function HeroSection() {
         </motion.p>
 
         {/* CTA row */}
-        <div className="flex items-center gap-4 justify-center md:justify-start">
-          <button onClick={() => navigate('/auth')} className="cursor-pointer px-7 py-3 bg-blue-500 hover:bg-blue-400 active:scale-95 rounded-lg font-semibold text-sm transition-all duration-200 shadow-lg shadow-blue-900/30">
+        <div className="flex flex-wrap items-center gap-3 sm:gap-4 justify-center md:justify-start">
+          <button onClick={() => navigate('/auth')} className="cursor-pointer px-5 sm:px-7 py-2.5 sm:py-3 bg-blue-500 hover:bg-blue-400 active:scale-95 rounded-lg font-semibold text-sm transition-all duration-200 shadow-lg shadow-blue-900/30">
             Plan my trip →
           </button>
           <button className="text-sm text-white/60 hover:text-white transition underline underline-offset-4">

@@ -25,7 +25,7 @@ export default function FeaturesSection() {
     <section
       ref={sectionRef}
       style={{ background: "linear-gradient(180deg, teal 0%, #020617 60%, #0a1628 100%)" }}
-      className="relative overflow-hidden py-28 md:py-36"
+      className="relative overflow-hidden py-16 sm:py-24 md:py-36"
     >
       {/* Subtle noise texture overlay */}
       <div
@@ -57,7 +57,7 @@ export default function FeaturesSection() {
         <div className="h-full w-full" style={{ background: "linear-gradient(90deg, transparent, rgba(61,154,155,0.35), transparent)" }} />
       </motion.div>
 
-      <div className="relative mx-auto max-w-7xl px-6 lg:px-12">
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-12">
 
         {/* Section heading */}
         <motion.div
@@ -65,7 +65,7 @@ export default function FeaturesSection() {
           initial={{ opacity: 0, y: 32 }}
           animate={headingInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-          className="mb-20 md:mb-28 max-w-xl"
+          className="mb-12 sm:mb-20 md:mb-28 max-w-xl"
         >
           {/* Eyebrow */}
           <div className="flex items-center gap-3 mb-5">
@@ -78,7 +78,7 @@ export default function FeaturesSection() {
             </span>
           </div>
           <h2
-            className="text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight mb-5"
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight mb-5"
             style={{ fontFamily: "'Sora', sans-serif", letterSpacing: "-0.02em" }}
           >
             Why Choose<br />
@@ -93,7 +93,7 @@ export default function FeaturesSection() {
         </motion.div>
 
         {/* Main layout — staggered asymmetric split */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 sm:gap-16 lg:gap-8 items-start">
 
           {/* LEFT — Features */}
           <div className="lg:col-span-7 space-y-0">
@@ -132,7 +132,7 @@ export default function FeaturesSection() {
               initial={{ opacity: 0, scale: 0.85 }}
               animate={mockupInView ? { opacity: 1, scale: 1 } : {}}
               transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1], delay: 0.65 }}
-              className="absolute -bottom-5 -left-5 px-5 py-3 rounded-2xl"
+              className="hidden sm:block absolute -bottom-5 -left-5 px-5 py-3 rounded-2xl"
               style={{
                 background: "rgba(10,22,40,0.92)",
                 border: "1px solid rgba(61,154,155,0.3)",
@@ -151,7 +151,7 @@ export default function FeaturesSection() {
               initial={{ opacity: 0, scale: 0.85 }}
               animate={mockupInView ? { opacity: 1, scale: 1 } : {}}
               transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1], delay: 0.8 }}
-              className="absolute -top-5 -right-5 px-5 py-3 rounded-2xl"
+              className="hidden sm:block absolute -top-5 -right-5 px-5 py-3 rounded-2xl"
               style={{
                 background: "rgba(10,22,40,0.92)",
                 border: "1px solid rgba(61,154,155,0.2)",
@@ -187,7 +187,7 @@ function FeatureRow({ feat, index, isInView }) {
       transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.15 + index * 0.12 }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className="group relative flex gap-6 py-8 cursor-default"
+      className="group relative flex gap-4 sm:gap-6 py-6 sm:py-8 cursor-default"
       style={{
         borderBottom: "1px solid rgba(255,255,255,0.06)",
       }}
@@ -206,7 +206,7 @@ function FeatureRow({ feat, index, isInView }) {
 
       {/* Number */}
       <div
-        className="flex-shrink-0 w-8 pt-1"
+        className="hidden sm:block flex-shrink-0 w-8 pt-1"
         style={{
           fontFamily: "'Sora', sans-serif",
           fontSize: "11px",
@@ -260,7 +260,7 @@ function FeatureRow({ feat, index, isInView }) {
       <motion.div
         animate={{ opacity: hovered ? 1 : 0, x: hovered ? 0 : -8 }}
         transition={{ duration: 0.3, ease: "easeOut" }}
-        className="flex-shrink-0 self-center"
+        className="hidden sm:flex flex-shrink-0 self-center"
         style={{ color: "#3D9A9B" }}
       >
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none">

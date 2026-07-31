@@ -21,6 +21,9 @@ exports.createItinerary = async (req, res) => {
     try{
         const { tripId } = req.params;
         const trip = await TripData.findByPk(tripId);
+        if (!trip) {
+            return res.status(404).json({ message: "Trip not found" });
+        }
         const destination = trip.destination;
         const existingItinerary = await ItineraryData.findOne({ where: { trip_id: tripId } });
         if(existingItinerary){

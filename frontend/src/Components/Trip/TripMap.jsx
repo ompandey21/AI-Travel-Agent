@@ -155,11 +155,11 @@ const styles = {
     fontSize: 11, color: "#5eead4", letterSpacing: 2,
     fontWeight: 600, textTransform: "uppercase",
   },
-  routeRow:   { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 },
-  routePoint: { display: "flex", alignItems: "center", gap: 7 },
+  routeRow:   { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, minWidth: 0 },
+  routePoint: { display: "flex", alignItems: "center", gap: 7, minWidth: 0, flexShrink: 1 },
   routeDot:   { width: 10, height: 10, borderRadius: "50%", display: "inline-block", flexShrink: 0 },
-  routeName:  { fontSize: 12, fontWeight: 700, color: "#e2e8f0" },
-  dashes:     { color: "rgba(255,255,255,0.15)", fontSize: 12, flex: 1, textAlign: "center", letterSpacing: 3 },
+  routeName:  { fontSize: 12, fontWeight: 700, color: "#e2e8f0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+  dashes:     { color: "rgba(255,255,255,0.15)", fontSize: 12, flex: "0 1 auto", textAlign: "center", letterSpacing: 3, minWidth: 20 },
 };
 
 export default TripMap;

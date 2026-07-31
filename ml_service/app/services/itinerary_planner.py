@@ -82,7 +82,6 @@ def extract_json(text):
         start = text.find("{")
         end = text.rfind("}") + 1
         clean_text = text[start:end]
-        print(f"DEBUG: Cleaned text for JSON: '{clean_text}'") # Add this
         return json.loads(clean_text)
     except Exception as e:
         return {"error": f"JSON Parse Error: {str(e)}", "raw": text}

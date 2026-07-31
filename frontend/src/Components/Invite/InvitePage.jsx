@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { acceptRequest } from "../Trip/TripAPI";
 
-const API = "http://localhost:8080/api";
+const API = `${import.meta.env.VITE_API_URL || "http://localhost:8080"}/api`;
 
 const WaveBg = () => (
   <svg
@@ -39,7 +39,7 @@ const LoadingView = () => (
   </div>
 );
 
-const ErrorView = () => (
+const ErrorView = ({ onRequestNew }) => (
   <div className="flex flex-col items-center">
     <div className="w-[68px] h-[68px] rounded-full bg-red-50 border-2 border-red-200 flex items-center justify-center mb-5">
       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round">
@@ -55,6 +55,7 @@ const ErrorView = () => (
       This invite has expired or was already used. Ask your trip organizer to send a fresh invite.
     </p>
     <button
+      onClick={onRequestNew}
       className="px-6 py-[9px] border border-red-300 rounded-[10px] bg-transparent text-red-700 text-sm font-medium cursor-pointer transition-colors hover:bg-red-50"
     >
       Request a new invite
@@ -111,13 +112,19 @@ export default function InviteConfirmPage() {
 
   const handleAccept = async () => {
     if (userExists) {
-        acceptRequest(token)
-        .then(navigate("/auth"))
-        .catch((e) => console.log(e));
+        try {
+            await acceptRequest(token);
+            navigate("/auth");
+        } catch (e) {
+            console.log(e);
+            setViewState("error");
+        }
     } else {
       navigate(`/auth?token=${token}`);
     }
   };
+
+  const handleRequestNew = () => navigate("/profile");
 
   const card = (content) => (
     <div className="min-h-screen bg-[#f4faff] flex flex-col items-center justify-center px-4 py-12 relative" style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
@@ -126,7 +133,7 @@ export default function InviteConfirmPage() {
 
       {/* Card */}
       <div
-        className="bg-white/90 backdrop-blur-xl rounded-3xl border max-w-[480px] w-full flex flex-col items-center z-[1] px-8 pt-10 pb-8 shadow-[0_8px_40px_rgba(26,127,193,0.1),0_1px_0_rgba(255,255,255,0.8)_inset]"
+        className="bg-white/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl border max-w-[480px] w-full flex flex-col items-center z-[1] px-5 sm:px-8 pt-8 sm:pt-10 pb-6 sm:pb-8 shadow-[0_8px_40px_rgba(26,127,193,0.1),0_1px_0_rgba(255,255,255,0.8)_inset]"
         style={{ borderColor: "#cce5f8", borderWidth: "0.5px", animation: "fadeUp 0.45s cubic-bezier(0.22,1,0.36,1)" }}
       >
         {content}
@@ -135,7 +142,7 @@ export default function InviteConfirmPage() {
   );
 
   if (viewState === "loading") return card(<LoadingView />);
-  if (viewState === "error") return card(<ErrorView />);
+  if (viewState === "error") return card(<ErrorView onRequestNew={handleRequestNew} />);
 
   if (viewState === "invite") return card(
     <>

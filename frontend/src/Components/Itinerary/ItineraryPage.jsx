@@ -26,6 +26,15 @@ const NAV_ITEMS = [
   { id: "expense", label: "Expense Split", icon: Receipt },
 ];
 
+function isTripOngoing(trip) {
+  if (!trip?.startDate || !trip?.endDate) return false;
+  const now = new Date();
+  const start = new Date(trip.startDate);
+  const end = new Date(trip.endDate);
+  end.setHours(23, 59, 59, 999);
+  return now >= start && now <= end;
+}
+
 // Fallback shown while a lazy component is loading
 function TabLoader() {
   return (
@@ -70,7 +79,7 @@ export default function ItineraryPage() {
   }, [tripId]);
   const navigate = useNavigate();
   return (
-    <div className="relative min-h-screen w-full flex overflow-hidden font-sans">
+    <div className="relative min-h-screen w-full flex flex-col md:flex-row overflow-hidden font-sans">
       {/* Background video */}
       <video
         autoPlay loop muted playsInline
@@ -84,11 +93,39 @@ export default function ItineraryPage() {
       </video>
       <div className="fixed inset-0 z-0 bg-gradient-to-br from-[#081c28]/95 via-[#0a2632]/92 to-[#05141e]/97" />
 
-      {/* ── Sidebar ────────────────────────────────────────────────────── */}
+      {/* ── Mobile top bar (nav tabs) ──────────────────────────────────── */}
+      <div className="md:hidden relative z-10 flex items-center justify-between px-4 py-3 bg-[#0a2837]/85 backdrop-blur-xl border-b border-teal-400/15">
+        <span
+          className="text-white text-base font-bold tracking-wide truncate max-w-[45%]"
+          onClick={() => navigate('/')}
+        >
+          {trip?.name ?? "Iternation"}
+        </span>
+        <nav className="flex items-center gap-1">
+          {NAV_ITEMS.map((item) => {
+            const Icon = item.icon;
+            const isActive = active === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setActive(item.id)}
+                title={item.label}
+                aria-label={item.label}
+                className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors
+                            ${isActive ? "text-teal-400 bg-teal-400/15" : "text-teal-100/50"}`}
+              >
+                <Icon size={16} strokeWidth={isActive ? 2.2 : 1.8} />
+              </button>
+            );
+          })}
+        </nav>
+      </div>
+
+      {/* ── Sidebar (desktop) ──────────────────────────────────────────── */}
       <motion.aside
         animate={{ width: collapsed ? 64 : 224 }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
-        className="relative z-10 flex flex-col h-screen sticky top-0 shrink-0
+        className="hidden md:flex relative z-10 flex-col h-screen sticky top-0 shrink-0
                    bg-[#0a2837]/75 backdrop-blur-xl border-r border-teal-400/15 overflow-hidden"
       >
         {/* Logo + collapse button */}
@@ -203,7 +240,7 @@ export default function ItineraryPage() {
 
         {/* Collapsed trip indicator */}
         <AnimatePresence>
-          {collapsed && (
+          {collapsed && trip && isTripOngoing(trip) && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -217,7 +254,7 @@ export default function ItineraryPage() {
       </motion.aside>
 
       {/* ── Main content area ──────────────────────────────────────────── */}
-      <main className="relative z-10 flex-1 p-8 overflow-auto">
+      <main className="relative z-10 flex-1 p-3 sm:p-5 md:p-8 overflow-auto">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}

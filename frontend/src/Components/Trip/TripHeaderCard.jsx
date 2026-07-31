@@ -47,8 +47,8 @@ const styles = {
     color: "#5eead4", border: "1px solid rgba(94,234,212,0.3)", borderRadius: 20,
     padding: "3px 10px", width: "fit-content"
   },
-  title: { fontSize: 26, fontWeight: 800, color: "#f8fafc", margin: 0, lineHeight: 1.2, fontFamily: "'Playfair Display', serif" },
-  destination: { display: "flex", alignItems: "center", color: "#94a3b8", fontSize: 13, margin: 0 },
+  title: { fontSize: "clamp(20px, 5vw, 26px)", fontWeight: 800, color: "#f8fafc", margin: 0, lineHeight: 1.2, fontFamily: "'Playfair Display', serif", wordBreak: "break-word" },
+  destination: { display: "flex", alignItems: "center", flexWrap: "wrap", color: "#94a3b8", fontSize: 13, margin: 0 },
   grid: { display: "flex", flexDirection: "column", gap: 8, marginTop: 4 },
   stat: { display: "flex", alignItems: "center", gap: 10, background: "rgba(255,255,255,0.04)", borderRadius: 10, padding: "8px 12px" },
   statIcon: { color: "#5eead4", display: "flex" },
