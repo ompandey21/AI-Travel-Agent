@@ -2,9 +2,14 @@ const { UserAuth } = require("../../config/db");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const sendEmail = require("../../utils/sendMail");
+const { get } = require("../routes/authRoute");
 
 const saltRounds = 10;
 const jwt_secret = process.env.JWT_SECRET;
+const jwt_access_secret = process.env.JWT_ACCESS_SECRET;
+const jwt_refresh_secret = process.env.JWT_REFRESH_SECRET;
+const accessTokenExpiry = process.env.ACCESS_TOKEN_EXPIRY || "15m";
+const refreshTokenExpiry = process.env.REFRESH_TOKEN_EXPIRY || "7d";
 
 async function hashPass(password) {
   try {
@@ -27,6 +32,12 @@ async function verifyUser(plainPass, hashedPass) {
   }
 }
 
+const getCookieOptions = () => ({
+  httpOnly: true,
+  sameSite: "strict",
+  secure: process.env.NODE_ENV === "production",
+});
+
 exports.createUser = async (req, res) => {
   try {
     const { name, email, password, cpassword } = req.body;
@@ -40,12 +51,18 @@ exports.createUser = async (req, res) => {
     const hashedPass = await hashPass(password);
     const user = await UserAuth.create({ name, email, password: hashedPass });
     const payload = { id: user.id };
-    const token = jwt.sign(payload, jwt_secret, { expiresIn: "1h" });
-    res.cookie("token", token, {
-      httpOnly: true,
-      sameSite: "strict",
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 60 * 60 * 1000,
+    const access_token = jwt.sign(payload, jwt_access_secret, { expiresIn: accessTokenExpiry });
+    const refresh_token = jwt.sign(payload, jwt_refresh_secret, { expiresIn: refreshTokenExpiry });
+    const hash_token = await hashPass(refresh_token);
+    user.refresh_token = hash_token;
+    await user.save();
+    res.cookie("access_token", access_token, {
+      ...getCookieOptions(),
+      maxAge: 15 * 60 * 1000,
+    });
+    res.cookie("refresh_token", refresh_token, {
+      ...getCookieOptions(),
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
     res
       .status(201)
@@ -73,12 +90,17 @@ exports.loginUser = async (req, res) => {
       const payLoad = {
         id: findUser.id,
       };
-      const token = jwt.sign(payLoad, jwt_secret, { expiresIn: "1h" });
-      res.cookie("token", token, {
-        httpOnly: true,
-        sameSite: "lax",
-        secure: process.env.NODE_ENV === "production",
-        maxAge: 60 * 60 * 1000,
+      const access_token = jwt.sign(payLoad, jwt_access_secret, { expiresIn: accessTokenExpiry });
+      const refresh_token = jwt.sign(payLoad, jwt_refresh_secret, { expiresIn: refreshTokenExpiry });
+      const hash_token = await hashPass(refresh_token);
+      findUser.refresh_token = hash_token;
+      await findUser.save();
+      res.cookie("access_token", access_token, {
+        ...getCookieOptions(),
+      });
+      res.cookie("refresh_token", refresh_token, {
+        ...getCookieOptions(),
+        maxAge: 7 * 24 * 60 * 60 * 1000,
       });
       res.status(200).json({
         message: "Login successfull",
@@ -188,8 +210,16 @@ exports.logout = async (req, res) => {
       secure: process.env.NODE_ENV === "production",
       path: "/",
     };
-    res.clearCookie("token", cookieOptions);
-    res.cookie("token", "", { ...cookieOptions, expires: new Date(0) });
+
+    const access_token = req.cookies.access_token;
+    const decode = jwt.verify(access_token, jwt_access_secret);
+    const user = await UserAuth.findByPk(decode.id);
+    user.refresh_token = null;
+    await user.save();
+
+    res.clearCookie("access_token", cookieOptions);
+    res.clearCookie("refresh_token", cookieOptions);
+
     return res.status(200).json({ message: "Logged out" });
   } catch (e) {
     console.error("Logout error", e);
@@ -199,11 +229,11 @@ exports.logout = async (req, res) => {
 
 exports.getMe = async (req, res) => {
   try {
-    const token = req.cookies.token;
-    if (!token) {
+    const access_token = req.cookies.access_token;
+    if (!access_token) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const decoded = jwt.verify(token, jwt_secret);
+    const decoded = jwt.verify(access_token, jwt_access_secret);
     const user = await UserAuth.findByPk(decoded.id, {
       attributes: ["id", "name", "email", "createdAt"],
     });
@@ -218,27 +248,81 @@ exports.getMe = async (req, res) => {
 };
 exports.getUserById = async (req, res) => {
   try {
-    const token = req.cookies.token;
-    if (!token) {
+    const access_token = req.cookies.access_token;
+    
+    if (!access_token) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const decoded = jwt.verify(token, jwt_secret);
+
+    const decoded = jwt.verify(access_token, jwt_access_secret);
     const id = req.params.id;
+
     if (!id || isNaN(id)) {
       return res.status(400).json({ message: "Invalid user ID" });
     }
+
     const user = await UserAuth.findByPk(id, {
       attributes: ["id", "name", "email"],
     });
+
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
+
     return res.status(200).json(user);
   } catch (e) {
     console.error("Error fetching current user", e);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+
+exports.authRefreshToken = async (req, res) => {
+  try{
+    const refresh_token = req.cookies.refresh_token;
+    if(!refresh_token){
+      return res.status(401).json({message : "unauthorized"});
+    }
+
+    const decoded = jwt.verify(refresh_token, jwt_refresh_secret);
+    const user = await UserAuth.findByPk(decoded.id);
+
+    if(!user){
+      return res.status(401).json({message : "user not found"});
+    }
+
+    const user_refresh_token = user.refresh_token;
+    const isMatch = await verifyUser(refresh_token, user_refresh_token);
+
+    if(!isMatch){
+      return res.status(401).json({message : "invalid refresh token"});
+    }
+
+    const payLoad = {id : user.id};
+
+    const new_refresh_token = jwt.sign(payLoad, jwt_refresh_secret, {expiresIn : refreshTokenExpiry});
+    const hash_token = await hashPass(new_refresh_token);
+    user.refresh_token = hash_token;
+    await user.save();
+
+    const new_access_token = jwt.sign(payLoad, jwt_access_secret, {expiresIn : accessTokenExpiry});
+
+    res.cookie("access_token", new_access_token, {
+      ...getCookieOptions(),
+      maxAge : 15 * 60 * 1000
+    });
+    res.cookie("refresh_token", new_refresh_token, {
+      ...getCookieOptions(),
+      secure : process.env.NODE_ENV === "production",
+      maxAge : 7 * 24 * 60 * 60 * 1000
+    })
+
+    return res.status(200).json({message : "Access token refreshed"});
+  }
+  catch(e){
+    console.error("Error refreshing token", e);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
 
 module.exports = {
   hashPass,
@@ -251,4 +335,5 @@ module.exports = {
   logout: exports.logout,
   getMe: exports.getMe,
   getUserById: exports.getUserById,
+  authRefreshToken: exports.authRefreshToken
 };

@@ -1,6 +1,8 @@
 const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
 const { TripMember, ChatMessage, UserAuth } = require('./db');
+const jwt_access_secret = process.env.JWT_ACCESS_SECRET;
+
 
 const parseCookies = (cookieHeader = '') => {
   return cookieHeader.split(';').reduce((cookies, pair) => {
@@ -25,11 +27,11 @@ const initializeSocketServer = (server) => {
 
   const verifySocketUser = async (socket, next) => {
     try {
-      const token = parseCookies(socket.handshake.headers.cookie || '').token;
+      const token = parseCookies(socket.handshake.headers.cookie || '').access_token;
       if (!token) {
         return next(new Error('Unauthorized'));
       }
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const decoded = jwt.verify(token, jwt_access_secret);
       const user = await UserAuth.findByPk(decoded.id);
       if (!user) {
         return next(new Error('Unauthorized'));

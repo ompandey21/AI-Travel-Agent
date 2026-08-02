@@ -21,6 +21,10 @@ const UserAuth = {
   otp_expires: {
     type: DataTypes.DATE,
     allowNull: true
+  },
+  refresh_token: {
+    type: DataTypes.STRING,
+    allowNull: true
   }
 };
 
