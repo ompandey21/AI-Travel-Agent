@@ -44,6 +44,14 @@ function App() {
             }
           />
           <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/trip/:tripId/itinerary"
             element={
               <ProtectedRoute>
