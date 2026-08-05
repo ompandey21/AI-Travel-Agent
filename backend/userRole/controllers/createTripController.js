@@ -123,6 +123,12 @@ exports.createTrip = async (req, res) => {
     });
   } catch (e) {
     console.error("Create trip error", e);
+    if (e.statusCode === 429 || e.message === "Geocoding service rate limit exceeded") {
+      return res.status(429).json({
+        message:
+          "Geocoding service rate limit exceeded. Please retry in a moment.",
+      });
+    }
     res.status(500).json({ message: "Internal server error" });
   }
 };

@@ -34,9 +34,32 @@ async function verifyUser(plainPass, hashedPass) {
 
 const getCookieOptions = () => ({
   httpOnly: true,
-  sameSite: "strict",
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
   secure: process.env.NODE_ENV === "production",
+  path: "/",
 });
+
+exports.googleOauthCallback = async (req, res) => {
+  const user = req.user;
+  const payload = { id: user.id };
+  const access_token = jwt.sign(payload, jwt_access_secret, { expiresIn: accessTokenExpiry });
+  const refresh_token = jwt.sign(payload, jwt_refresh_secret, { expiresIn: refreshTokenExpiry });
+  const hash_token = await hashPass(refresh_token);
+
+  user.refresh_token = hash_token;
+  await user.save();
+
+  res.cookie("access_token", access_token, {
+    ...getCookieOptions(),
+    maxAge: 15 * 60 * 1000,
+  });
+  res.cookie("refresh_token", refresh_token, {
+    ...getCookieOptions(),
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
+  
+  return res.redirect(`${process.env.FRONTEND_URL}/dashboard`);
+}
 
 exports.createUser = async (req, res) => {
   try {
@@ -204,16 +227,10 @@ exports.createpassword = async (req, res) => {
 
 exports.logout = async (req, res) => {
   try {
-    const cookieOptions = {
-      httpOnly: true,
-      sameSite: "strict",
-      secure: process.env.NODE_ENV === "production",
-      path: "/",
-    };
-
+    const cookieOptions = getCookieOptions();
     const access_token = req.cookies.access_token;
-    const decode = jwt.verify(access_token, jwt_access_secret);
-    const user = await UserAuth.findByPk(decode.id);
+    const decoded = jwt.verify(access_token, jwt_access_secret);
+    const user = await UserAuth.findByPk(decoded.id);
     user.refresh_token = null;
     await user.save();
 
@@ -335,5 +352,6 @@ module.exports = {
   logout: exports.logout,
   getMe: exports.getMe,
   getUserById: exports.getUserById,
-  authRefreshToken: exports.authRefreshToken
+  authRefreshToken: exports.authRefreshToken,
+  googleOauthCallback: exports.googleOauthCallback
 };

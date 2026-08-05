@@ -4,6 +4,8 @@ import AuthFooter from './AuthFooter'
 import { login as apiLogin, signup as apiSignup, forgetPassword as apiForget, createPassword as apiCreatePassword, verifyResetToken as apiVerifyReset } from './authApi'
 import { acceptRequest } from '../Trip/TripAPI'
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080'
+
 export default function AuthForm(){
     const [mode, setMode] = useState('login')
     const [form, setForm] = useState({ name: '', email: '', otp: '', password: '', cpassword: '' })
@@ -171,6 +173,47 @@ export default function AuthForm(){
         finally { setLoading(false) }
     }
 
+    const handleGoogleSignIn = () => {
+        const oauthUrl = `${API_BASE}/api/auth/google`
+        const width = 600
+        const height = 700
+        const left = window.screenX + (window.outerWidth - width) / 2
+        const top = window.screenY + (window.outerHeight - height) / 2
+        const popup = window.open(oauthUrl, 'google_oauth', `width=${width},height=${height},left=${left},top=${top}`)
+
+        if (!popup) {
+            setMessage('Unable to open popup. Please allow popups and try again.')
+            return
+        }
+
+        const start = Date.now()
+        const timeout = 60 * 1000 // 60s
+
+        const interval = setInterval(async () => {
+            if (popup.closed) {
+                clearInterval(interval)
+                return
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/api/auth/me`, { credentials: 'include' })
+                if (res.ok) {
+                    clearInterval(interval)
+                    try { popup.close() } catch (e) {}
+                    navigate('/profile')
+                }
+            } catch (err) {
+                // ignore until authenticated
+            }
+
+            if (Date.now() - start > timeout) {
+                clearInterval(interval)
+                try { popup.close() } catch (e) {}
+                setMessage('Google sign-in timed out. Please try again.')
+            }
+        }, 1000)
+    }
+
     const hero = import.meta.env.VITE_AUTH_IMG;
 
     return (
@@ -260,6 +303,15 @@ export default function AuthForm(){
 
                     <button disabled={loading} type="submit" className="w-full py-3 rounded-lg bg-sky-500 hover:bg-sky-400 font-semibold">{loading ? 'Working…' : mode === 'login' ? 'Sign in' : mode === 'signup' ? 'Create account' : mode === 'reset' ? 'Reset password' : 'Send reset link'}</button>
                 </form>
+
+                {(mode === 'login' || mode === 'signup') && (
+                    <div className="mt-4">
+                        <button onClick={handleGoogleSignIn} aria-label="Sign in with Google" className="w-full py-2.5 rounded-lg bg-white hover:bg-gray-50 shadow-sm border border-gray-200 flex items-center justify-center gap-3">
+                            <img src="/google_logo.png" alt="Google logo" className="w-5 h-5" />
+                            <span className="text-sm font-medium text-gray-800">Sign in with Google</span>
+                        </button>
+                    </div>
+                )}
 
             <AuthFooter mode={mode} setMode={setMode} />
             </div>

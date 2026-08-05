@@ -45,8 +45,8 @@ export default function GroupChat() {
   useEffect(() => {
     if (!tripId) return;
     const socket = io(BACKEND_URL, {
-      transports: ["websocket"],
       withCredentials: true,
+      transports: ["polling", "websocket"],
     });
 
     socketRef.current = socket;
